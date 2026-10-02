@@ -11,8 +11,10 @@ This workspace maintains synchronous bindings, native FFI bindings, and async bi
 It continues the work of [`rust-zmq`](https://github.com/erickt/rust-zmq) and
 [`tmq`](https://github.com/cetra3/tmq).
 
-[Changes](NEWS.md) · [Build and test](HACKING.md) · [Contributing](CONTRIBUTING.md) ·
-[Source and licenses](PROVENANCE.md)
+[Changes](https://github.com/rdaum/r0z/blob/main/NEWS.md) ·
+[Build and test](https://github.com/rdaum/r0z/blob/main/HACKING.md) ·
+[Contributing](https://github.com/rdaum/r0z/blob/main/CONTRIBUTING.md) ·
+[Source and licenses](https://github.com/rdaum/r0z/blob/main/PROVENANCE.md)
 
 ## Why this fork exists
 
@@ -34,53 +36,57 @@ and were open to a handoff. I
 As of October 2, 2026, that offer had received no reply, and no handoff had occurred. So this is now
 an independent fork.
 
-`tmq` 0.5.0 depended on `zmq` 0.10.0 and so inherited its maintenance problem. Its async API also
-needs attention. The [open tickets](#development) track those concerns and link to the original
-upstream reports.
+`tmq` 0.5.0 depended on `zmq` 0.10.0 and so inherited its maintenance problem. The
+[development tickets](#development) record the async concerns, upstream reports, and work completed
+in this fork.
 
 Keeping the crates together lets changes to the native, synchronous, and async layers be tested
-together. The new name(s) are meant give this maintenance work its own release path.
+together. The new package names give this maintenance work its own release path.
 
 ## Workspace
 
-| Package                         | Rust import | Purpose                                      | Current platform support     |
-| ------------------------------- | ----------- | -------------------------------------------- | ---------------------------- |
-| [`r0z`](crates/r0z)             | `r0z`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows        |
-| [`r0z-sys`](crates/r0z-sys)     | `r0z_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows        |
-| [`r0z-async`](crates/r0z-async) | `r0z_async` | Async sockets built on `r0z`                 | Unix, with Tokio or async-io |
+| Package                                                                | Rust import | Purpose                                      | Current platform support     |
+| ---------------------------------------------------------------------- | ----------- | -------------------------------------------- | ---------------------------- |
+| [`r0z`](https://github.com/rdaum/r0z/tree/main/crates/r0z)             | `r0z`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows        |
+| [`r0z-sys`](https://github.com/rdaum/r0z/tree/main/crates/r0z-sys)     | `r0z_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows        |
+| [`r0z-async`](https://github.com/rdaum/r0z/tree/main/crates/r0z-async) | `r0z_async` | Async sockets built on `r0z`                 | Unix, with Tokio or async-io |
 
 The synchronous API follows the native C API closely. The async crate supports request/reply,
 publish/subscribe, dealer/router, and push/pull sockets. It provides `futures` streams and sinks
 where the socket pattern permits them.
 
 The async crate supports Tokio and `async-io` on Unix. See
-[adapter selection](crates/r0z-async/README.md#runtime-selection) for feature flags and examples.
+[adapter selection](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/README.md#runtime-selection)
+for feature flags and examples.
 
 ## Development
 
 The fork integrates upstream fixes and maintains all three crates in one workspace. See
-[NEWS.md](NEWS.md) for completed changes and original pull request numbers.
+[NEWS.md](https://github.com/rdaum/r0z/blob/main/NEWS.md) for completed changes and original pull
+request numbers.
 
-Open tickets cover
-[socket ownership and cancellation (#1)](https://github.com/rdaum/rust-zmq/issues/1),
-[receive timeouts (#2)](https://github.com/rdaum/rust-zmq/issues/2), and
-[split socket hangs (#3)](https://github.com/rdaum/rust-zmq/issues/3). The
-[runtime adapter work (#4)](https://github.com/rdaum/rust-zmq/issues/4) records the portability
-requirements. [Message copies (#5)](https://github.com/rdaum/rust-zmq/issues/5) tracks further
-performance work. The tickets contain the evidence, proposed work, and acceptance criteria.
+The tickets record the completed work on
+[socket ownership and cancellation (#1)](https://github.com/rdaum/r0z/issues/1),
+[receive timeouts and shutdown (#2)](https://github.com/rdaum/r0z/issues/2),
+[split socket regressions (#3)](https://github.com/rdaum/r0z/issues/3), and
+[message copies (#5)](https://github.com/rdaum/r0z/issues/5). The
+[runtime adapter ticket (#4)](https://github.com/rdaum/r0z/issues/4) records adapter support and CI
+follow-up. See the [open issues](https://github.com/rdaum/r0z/issues?q=is%3Aissue%20is%3Aopen) for
+remaining work.
 
 ## Use the bindings
 
-The renamed crates are not yet published. For development, use local paths to this checkout:
+The first release uses version `0.1.0` for all three packages. Its dependency declarations are:
 
 ```toml
 [dependencies]
-r0z = { path = "../rust-zmq/crates/r0z" }
+r0z = "0.1.0"
 # Add this dependency if you need async sockets:
-r0z-async = { path = "../rust-zmq/crates/r0z-async" }
+r0z-async = "0.1.0"
 ```
 
-Adjust these paths for your project. Applications normally need no direct dependency on `r0z-sys`.
+Applications normally need no direct dependency on `r0z-sys`. For local development, replace the
+version with a path to the package under `crates/`.
 
 This example sends a message between two sockets in one process:
 
@@ -100,8 +106,9 @@ fn main() -> r0z::Result<()> {
 }
 ```
 
-See the [synchronous examples](crates/r0z/examples) and [async examples](crates/r0z-async/examples)
-for more socket patterns. To generate API documentation, run:
+See the [synchronous examples](https://github.com/rdaum/r0z/tree/main/crates/r0z/examples) and
+[async examples](https://github.com/rdaum/r0z/tree/main/crates/r0z-async/examples) for more socket
+patterns. To generate API documentation, run:
 
 ```sh
 cargo doc --workspace --no-deps --open
@@ -121,13 +128,13 @@ Replace the Cargo dependencies and Rust imports:
 
 `TmqError` and `AsZmqSocket` retain their names. Request/reply sockets now use `RequestReply` with
 borrowing operations. See the
-[async migration guide](crates/r0z-async/README.md#requestreply-ownership-and-migration). To reduce
-import edits, you can use Cargo dependency aliases:
+[async migration guide](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/README.md#requestreply-ownership-and-migration).
+To reduce import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]
-zmq = { package = "r0z", path = "../rust-zmq/crates/r0z" }
-tmq = { package = "r0z-async", path = "../rust-zmq/crates/r0z-async" }
+zmq = { package = "r0z", version = "0.1.0" }
+tmq = { package = "r0z-async", version = "0.1.0" }
 ```
 
 Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages. The new
@@ -150,8 +157,9 @@ cargo test --workspace --doc
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-On Windows, add `--exclude r0z-async` to each command. See [HACKING.md](HACKING.md) for more
-commands, including the separate fuzz and consumer projects.
+On Windows, add `--exclude r0z-async` to each command. See
+[HACKING.md](https://github.com/rdaum/r0z/blob/main/HACKING.md) for more commands, including the
+separate fuzz and consumer projects.
 
 ## Native behavior to account for
 
@@ -165,7 +173,7 @@ messages on close.
 
 Async sockets default to zero linger. Closing them discards queued outgoing messages. Set linger
 explicitly to permit a finite or infinite wait during context shutdown. See the
-[async shutdown guide](crates/r0z-async/README.md#shutdown-and-linger).
+[async shutdown guide](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/README.md#shutdown-and-linger).
 
 ## Source and licenses
 
@@ -177,13 +185,14 @@ Original authors and the existing Rust binding license terms are retained.
 
 Both upstream Rust projects declare **MIT OR Apache-2.0**, which permits this combined workspace
 under the same terms. You may choose either license for the Rust bindings. See
-[LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE), and the
-[async license notices](crates/r0z-async/UPSTREAM.md).
+[LICENSE-MIT](https://github.com/rdaum/r0z/blob/main/LICENSE-MIT),
+[LICENSE-APACHE](https://github.com/rdaum/r0z/blob/main/LICENSE-APACHE), and the
+[async license notices](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/UPSTREAM.md).
 
 Native dependencies retain their own licenses: `libzmq` uses MPL-2.0, and libsodium uses ISC. These
 can be combined with the Rust bindings, subject to their notice and source distribution
-requirements. See [PROVENANCE.md](PROVENANCE.md) for source links, attribution, and the license
-review.
+requirements. See [PROVENANCE.md](https://github.com/rdaum/r0z/blob/main/PROVENANCE.md) for source
+links, attribution, and the license review.
 
 Unless you explicitly state otherwise, contributions are licensed under both MIT and Apache-2.0,
 without additional terms.

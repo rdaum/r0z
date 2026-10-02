@@ -20,15 +20,20 @@ async fn main() -> Result<()> {
 ```
 
 This example needs `futures` and Tokio with the `macros` and `rt-multi-thread` features. See
-[examples](examples) for further usage. Publish sockets deliver messages only to connected
-subscribers; this example does not wait for them.
+[examples](https://github.com/rdaum/r0z/tree/main/crates/r0z-async/examples) for further usage.
+Publish sockets deliver messages only to connected subscribers; this example does not wait for them.
 
-See the [development tickets](../../README.md#development) for known concerns and planned
-improvements. Public names such as `TmqError` and `AsZmqSocket` remain unchanged.
+See the [development tickets](https://github.com/rdaum/r0z/blob/main/README.md#development) for
+known concerns and planned improvements. Public names such as `TmqError` and `AsZmqSocket` remain
+unchanged.
 
-See the [workspace README](../../README.md) for setup, migration, maintenance history, and current
-limitations. See [UPSTREAM.md](UPSTREAM.md) for the exact source, authors, and license declarations.
-This crate is available under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your choice.
+See the [workspace README](https://github.com/rdaum/r0z/blob/main/README.md) for setup, migration,
+maintenance history, and current limitations. See
+[UPSTREAM.md](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/UPSTREAM.md) for the exact
+source, authors, and license declarations. This crate is available under
+[MIT](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/LICENSE-MIT) or
+[Apache-2.0](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/LICENSE-APACHE), at your
+choice.
 
 ## Runtime selection
 
@@ -40,7 +45,7 @@ For `async-io`, disable default features:
 
 ```toml
 [dependencies]
-r0z-async = { path = "../rust-zmq/crates/r0z-async", default-features = false, features = ["async-io"] }
+r0z-async = { version = "0.1.0", default-features = false, features = ["async-io"] }
 async-io = "2.6.0"
 futures = "0.3.34"
 ```
@@ -130,8 +135,8 @@ sequencing bypass the protocol state tracked by this wrapper.
 
 Async operations use native `DONTWAIT`. Native `RCVTIMEO` and `SNDTIMEO` do not set async deadlines.
 Use the timer or selection API of your runtime. The
-[`request_timeout` example](examples/request_timeout.rs) retains the socket after a timer wins
-`tokio::select!`, then receives the delayed reply.
+[`request_timeout` example](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/examples/request_timeout.rs)
+retains the socket after a timer wins `tokio::select!`, then receives the delayed reply.
 
 ## Shutdown and linger
 
@@ -173,5 +178,5 @@ drop(socket);
 This controls local shutdown. It does not undo requests already delivered to a peer. Configure
 linger on each socket with queued outgoing messages before dropping the final context reference. See
 the [native shutdown contract](https://libzmq.readthedocs.io/en/latest/zmq_ctx_term.html). The
-[ownership ticket](https://github.com/rdaum/rust-zmq/issues/1) and
-[timeout investigation](https://github.com/rdaum/rust-zmq/issues/2) track the related work.
+[ownership ticket](https://github.com/rdaum/r0z/issues/1) and
+[timeout investigation](https://github.com/rdaum/r0z/issues/2) track the related work.

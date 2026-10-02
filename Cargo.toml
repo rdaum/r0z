@@ -4,8 +4,9 @@ members = ["crates/r0z", "crates/r0z-async", "crates/r0z-sys"]
 exclude = ["fuzz", "msrv-test"]
 
 [workspace.package]
+version = "0.1.0"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/rdaum/rust-zmq"
+repository = "https://github.com/rdaum/r0z"
 
 [workspace.dependencies]
 async-executor = "1.14.0"
@@ -20,8 +21,8 @@ log = "0.4.34"
 nix = { version = "0.31.3", features = ["poll"] }
 pretty_env_logger = "0.5.0"
 quickcheck = "1.1.0"
-r0z = { version = "0.10.0", path = "crates/r0z" }
-r0z-sys = { version = "0.13.0", path = "crates/r0z-sys", features = ["libsodium"] }
+r0z = { version = "0.1.0", path = "crates/r0z" }
+r0z-sys = { version = "0.1.0", path = "crates/r0z-sys", features = ["libsodium"] }
 rand = "0.10.3"
 tempfile = "3.27.0"
 thiserror = "2.0.21"

@@ -1,17 +1,22 @@
 [package]
 name = "r0z-sys"
-version = "0.13.0"
+version.workspace = true
 authors = [
     "a.rottmann@gmx.at",
     "erick.tryzelaar@gmail.com",
 ]
 build = "build/main.rs"
 categories = ["external-ffi-bindings"]
-keywords = ["ffi", "bindings"]
+edition = "2015"
+keywords = ["zeromq", "zmq", "ffi", "bindings"]
 license.workspace = true
 links = "zmq"
+readme = "../../README.md"
 repository.workspace = true
 description = "Native ZeroMQ (libzmq) build and FFI bindings"
+
+[package.metadata.docs.rs]
+targets = []
 
 [features]
 libsodium = ["libsodium-sys-stable"]

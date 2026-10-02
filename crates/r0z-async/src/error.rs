@@ -7,9 +7,7 @@ pub enum TmqError {
     #[error("Zmq error: {0}")]
     Zmq(#[from] r0z::Error),
     /// A send operation of a multipart message was successfully started, but it could not be finished.
-    #[error(
-        "Interrupted Zmq send. Please report this at https://github.com/rdaum/rust-zmq/issues"
-    )]
+    #[error("Interrupted Zmq send. Please report this at https://github.com/rdaum/r0z/issues")]
     InterruptedSend,
     /// An operation does not match the tracked REQ/REP protocol state.
     #[error("Cannot {operation} a request/reply socket in state {state:?}")]

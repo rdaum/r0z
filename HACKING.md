@@ -112,6 +112,38 @@ The parent observes that phase for 200 milliseconds, then kills and reaps the ch
 must return from the receive timeout and finish shutdown. These tests also run in the normal adapter
 CI matrix. They do not establish the cause of the incomplete upstream report.
 
+## Owned-message send benchmark
+
+Run the latency and batch throughput measurements with:
+
+```sh
+cargo bench -p r0z-async --bench owned_send
+```
+
+The benchmark uses Tokio with inproc and TCP sockets. It covers small frames, large frames, and
+multipart messages. Payload preparation is outside the timed region. Each sample waits for peer
+receipt, so it measures delivery rather than queue insertion alone.
+
+See [the measurement report](docs/owned-send-benchmark.md) for the baseline, allocation counts,
+results, and reproduction commands.
+
+## Release checks
+
+All three packages use the version in the workspace manifest. The internal dependency versions must
+match that release. Cargo publishes workspace dependencies before the packages that use them.
+
+Before publication, verify the packages without an upload:
+
+```sh
+cargo publish --workspace --dry-run --all-features
+```
+
+This command builds the packaged sources and checks their registry dependencies. Inspect the
+archives in `target/package` for source files, license files, and README content. Linux CI runs the
+same command. For local preparation with uncommitted edits, add `--allow-dirty` to the dry run.
+
+After publication, update downstream Git dependencies to the published versions.
+
 ## Regenerating the C bindings
 
 The C low-level, unsafe C binding is provided by the `r0z-sys` crate, also hosted in this

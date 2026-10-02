@@ -1,4 +1,14 @@
-# Unreleased (r0z workspace, 2026-10-02)
+# Unreleased (r0z 0.1.0 workspace)
+
+- Prepared all three packages for their first release under the r0z names, each at version 0.1.0.
+  Enabled async publishing and added package verification to CI.
+
+- Reduced the routine proxy test to 100 exchanges per client. Kept the 10,000-exchange version as an
+  ignored stress test for explicit runs.
+
+- Added `Socket::send_message(&mut Message, flags)`. It transfers the payload on success and retains
+  it on error for retry or cleanup. Async sends now use this API to avoid an extra payload copy.
+  Added ownership regressions and an owned-message send benchmark.
 
 - Fixed a use-after-free after `Context::destroy()`. Context clones now share termination state, and
   final cleanup does not terminate freed memory again. Context methods return `ETERM` after

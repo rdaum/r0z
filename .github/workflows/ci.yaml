@@ -19,6 +19,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: Cargo build
         run: cargo build ${{ matrix.packages }} --all-targets
+      - name: Verify release packages
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo publish --workspace --dry-run --all-features
   test:
     name: Test
     strategy:

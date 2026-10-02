@@ -1,6 +1,6 @@
 [package]
 name = "r0z-async"
-version = "0.5.0"
+version.workspace = true
 authors = [
     "cetra3 <cetra3@hotmail.com>",
     "skrap <jonah@petri.us>",
@@ -8,12 +8,17 @@ authors = [
     "YushiOMOTE <yushiomote@gmail.com>",
     "iddm <fx@thefx.co>",
 ]
+categories = ["api-bindings", "asynchronous", "network-programming"]
 edition = "2021"
+keywords = ["zeromq", "zmq", "async", "messaging"]
 license.workspace = true
-publish = false
 readme = "README.md"
 repository.workspace = true
 description = "Async bindings to native ZeroMQ (libzmq), with optional runtime adapters"
+
+[package.metadata.docs.rs]
+all-features = true
+targets = []
 
 [features]
 default = ["tokio"]

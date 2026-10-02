@@ -1,6 +1,6 @@
 [package]
 name = "r0z"
-version = "0.10.0"
+version.workspace = true
 authors = [
     "a.rottmann@gmx.at",
     "erick.tryzelaar@gmail.com",
@@ -8,11 +8,14 @@ authors = [
 ]
 categories = ["api-bindings", "network-programming"]
 edition = "2018"
-keywords = ["bindings", "protocol"]
+keywords = ["zeromq", "zmq", "bindings", "messaging"]
 license.workspace = true
 readme = "../../README.md"
 repository.workspace = true
 description = "Safe Rust bindings to native ZeroMQ (libzmq)"
+
+[package.metadata.docs.rs]
+targets = []
 
 [badges]
 maintenance = { status = "actively-maintained" }

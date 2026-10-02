@@ -18,7 +18,7 @@
 //! * Push/Pull
 //! ## Usage
 //!
-//! See the [examples](https://github.com/rdaum/rust-zmq/tree/main/crates/r0z-async/examples) for usage.
+//! See the [examples](https://github.com/rdaum/r0z/tree/main/crates/r0z-async/examples) for usage.
 //!
 //! ### Publish Example
 //!
