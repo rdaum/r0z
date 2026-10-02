@@ -60,7 +60,11 @@ fn receive_hammer() -> Result<()> {
         let address = generate_tcp_address();
         let ctx = Context::new();
         let sock = utils::pair(&ctx).bind(&address)?;
-        hammer_receive(sock, address, SocketType::PAIR).await
+        let result = hammer_receive(sock, address, SocketType::PAIR).await;
+        utils::diagnostic_phase("dropping receiver context");
+        drop(ctx);
+        utils::diagnostic_phase("receiver context dropped");
+        result
     })
 }
 

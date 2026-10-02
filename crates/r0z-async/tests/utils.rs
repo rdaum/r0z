@@ -9,7 +9,11 @@ use r0z::{Context, SocketType};
 use futures::StreamExt;
 use r0z_async::{Multipart, Result, TmqError};
 use rand::RngExt;
-use std::sync::{Arc, Barrier};
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc, Barrier, Mutex,
+};
+use std::{io::Write, time::Instant};
 
 /// Synchronous send and receive functions running in a separate thread.
 pub fn sync_send_multiparts<T: Into<r0z::Message> + Send + 'static>(
@@ -34,17 +38,27 @@ pub fn sync_send_multipart_repeated<T: Into<r0z::Message> + Clone + 'static + Se
     multipart: Vec<T>,
     count: u64,
 ) -> JoinHandle<()> {
+    let progress = Progress::new("sender", count);
     thread_spawn(move || {
-        let socket = Context::new().socket(socket_type).unwrap();
+        progress.phase("creating socket");
+        let context = Context::new();
+        let socket = context.socket(socket_type).unwrap();
+        progress.phase("connecting");
         socket.connect(&address).unwrap();
-
-        for _ in 0..count {
+        progress.phase("sending");
+        for completed in 1..=count {
             let msg = multipart
                 .clone()
                 .into_iter()
                 .map(|i| Into::<r0z::Message>::into(i));
             socket.send_multipart(msg, 0).unwrap();
+            progress.advance(completed);
         }
+        progress.phase("dropping socket");
+        drop(socket);
+        progress.phase("dropping context");
+        drop(context);
+        progress.phase("done");
     })
 }
 pub fn sync_receive_multiparts<T: Into<r0z::Message> + Send + 'static>(
@@ -163,14 +177,20 @@ pub async fn receive_multipart_repeated<
     expected: Vec<T>,
     count: u64,
 ) -> Result<()> {
+    let progress = Progress::new("receiver", count);
     let expected: Multipart = expected.into_iter().map(|i| i.into()).collect();
-    for _ in 0..count {
+    progress.phase("receiving");
+    for completed in 1..=count {
         if let Some(msg) = stream.next().await {
             assert_eq!(msg?, expected);
+            progress.advance(completed);
         } else {
             panic!("Stream ended too soon");
         }
     }
+    progress.phase("dropping stream");
+    drop(stream);
+    progress.phase("stream dropped");
     Ok(())
 }
 pub async fn send_multiparts<
@@ -218,7 +238,9 @@ pub async fn hammer_receive<S: Stream<Item = Result<Multipart>> + Unpin>(
 
     receive_multipart_repeated(stream, vec!["hello", "world"], count).await?;
 
+    diagnostic_phase("joining sender");
     thread.join().unwrap();
+    diagnostic_phase("sender joined; returning to caller");
 
     Ok(())
 }
@@ -243,59 +265,204 @@ enum Adapter {
 }
 
 thread_local! {
+    static DIAGNOSTICS: std::cell::RefCell<Option<Arc<Diagnostics>>> = const { std::cell::RefCell::new(None) };
     static ADAPTER: std::cell::Cell<Option<Adapter>> = const { std::cell::Cell::new(None) };
     #[cfg(feature = "async-io")]
     static EXECUTOR: async_executor::Executor<'static> = const { async_executor::Executor::new() };
+}
+
+struct Diagnostics {
+    test: String,
+    started: Instant,
+    adapter: Mutex<&'static str>,
+    phase: Mutex<&'static str>,
+    progress: Mutex<Vec<Arc<ProgressState>>>,
+}
+
+impl Diagnostics {
+    fn emit(&self, event: &str) {
+        let mut line = format!(
+            "[async-test {} +{:.3}s] adapter={} phase={} {event}",
+            self.test,
+            self.started.elapsed().as_secs_f64(),
+            self.adapter.lock().unwrap(),
+            self.phase.lock().unwrap(),
+        );
+        for progress in self.progress.lock().unwrap().iter() {
+            line.push_str(&format!(
+                " | {}={}/{} ({})",
+                progress.role,
+                progress.completed.load(Ordering::Relaxed),
+                progress.total,
+                progress.phase.lock().unwrap(),
+            ));
+        }
+        // Direct stderr writes bypass libtest capture, which is lost on process::abort.
+        let mut stderr = std::io::stderr().lock();
+        let _ = writeln!(stderr, "{line}");
+        let _ = stderr.flush();
+    }
+}
+
+struct ProgressState {
+    role: &'static str,
+    total: u64,
+    completed: AtomicU64,
+    phase: Mutex<&'static str>,
+}
+
+pub struct Progress {
+    diagnostics: Arc<Diagnostics>,
+    state: Arc<ProgressState>,
+}
+
+impl Progress {
+    pub fn new(role: &'static str, total: u64) -> Self {
+        let diagnostics = DIAGNOSTICS.with(|slot| slot.borrow().clone().expect("active deadline"));
+        let state = Arc::new(ProgressState {
+            role,
+            total,
+            completed: AtomicU64::new(0),
+            phase: Mutex::new("starting"),
+        });
+        diagnostics.progress.lock().unwrap().push(state.clone());
+        let progress = Self { diagnostics, state };
+        progress.diagnostics.emit("progress tracking started");
+        progress
+    }
+
+    pub fn advance(&self, completed: u64) {
+        self.state.completed.store(completed, Ordering::Relaxed);
+        if completed == 1 || completed.is_multiple_of(100_000) || completed == self.state.total {
+            self.diagnostics.emit("progress");
+        }
+    }
+
+    pub fn phase(&self, phase: &'static str) {
+        *self.state.phase.lock().unwrap() = phase;
+        self.diagnostics.emit("progress phase changed");
+    }
+}
+
+pub fn diagnostic_phase(phase: &'static str) {
+    DIAGNOSTICS.with(|slot| {
+        if let Some(diagnostics) = slot.borrow().as_ref() {
+            *diagnostics.phase.lock().unwrap() = phase;
+            if !diagnostics.progress.lock().unwrap().is_empty() {
+                diagnostics.emit("test phase changed");
+            }
+        }
+    });
 }
 
 // An OS-thread deadline also covers blocking native calls and socket/context teardown.
 pub struct Deadline {
     sender: std::sync::mpsc::Sender<()>,
     thread: Option<JoinHandle<()>>,
+    diagnostics: Arc<Diagnostics>,
+    previous: Option<Arc<Diagnostics>>,
 }
 impl Deadline {
+    #[track_caller]
     pub fn start() -> Self {
+        Self::start_with_timeout(std::time::Duration::from_secs(60))
+    }
+
+    #[track_caller]
+    pub fn start_with_timeout(timeout: std::time::Duration) -> Self {
+        let caller = std::panic::Location::caller();
+        let diagnostics = Arc::new(Diagnostics {
+            test: format!(
+                "{} {}:{}",
+                std::thread::current().name().unwrap_or("unnamed"),
+                caller.file(),
+                caller.line()
+            ),
+            started: Instant::now(),
+            adapter: Mutex::new("manual"),
+            phase: Mutex::new("starting"),
+            progress: Mutex::new(Vec::new()),
+        });
+        let previous = DIAGNOSTICS.with(|slot| slot.replace(Some(diagnostics.clone())));
+        let report = diagnostics.clone();
         let (sender, receiver) = std::sync::mpsc::channel();
         let thread = thread_spawn(move || {
-            if receiver.recv_timeout(std::time::Duration::from_secs(60))
-                == Err(std::sync::mpsc::RecvTimeoutError::Timeout)
-            {
-                eprintln!("async socket test exceeded its 60 second process deadline");
-                std::process::abort();
+            let expires = report.started + timeout;
+            loop {
+                let remaining = expires.saturating_duration_since(Instant::now());
+                match receiver.recv_timeout(remaining.min(std::time::Duration::from_secs(5))) {
+                    Ok(()) | Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
+                        if Instant::now() >= expires {
+                            report.emit(&format!(
+                                "deadline exceeded ({:.3}s); aborting",
+                                timeout.as_secs_f64()
+                            ));
+                            std::process::abort();
+                        }
+                        if !report.progress.lock().unwrap().is_empty() {
+                            report.emit("watchdog snapshot");
+                        }
+                    }
+                }
             }
         });
         Self {
             sender,
             thread: Some(thread),
+            diagnostics,
+            previous,
         }
+    }
+
+    pub fn enter_adapter(&self, adapter: &'static str) {
+        *self.diagnostics.adapter.lock().unwrap() = adapter;
+        self.diagnostics.progress.lock().unwrap().clear();
+        *self.diagnostics.phase.lock().unwrap() = "running";
     }
 }
 impl Drop for Deadline {
     fn drop(&mut self) {
         let _ = self.sender.send(());
         self.thread.take().unwrap().join().unwrap();
+        DIAGNOSTICS.with(|slot| slot.replace(self.previous.take()));
     }
 }
 
+#[track_caller]
 pub fn run<F, Fut>(test: F) -> Result<()>
 where
     F: Fn() -> Fut,
     Fut: std::future::Future<Output = Result<()>>,
 {
-    let _deadline = Deadline::start();
+    let deadline = Deadline::start();
     #[cfg(feature = "tokio")]
     {
+        deadline.enter_adapter("tokio");
         ADAPTER.set(Some(Adapter::Tokio));
         tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap()
-            .block_on(test())?;
+            .block_on(async {
+                let result = test().await;
+                diagnostic_phase("test returned; dropping runtime");
+                result
+            })?;
+        diagnostic_phase("runtime dropped");
     }
     #[cfg(feature = "async-io")]
     {
+        deadline.enter_adapter("async-io");
         ADAPTER.set(Some(Adapter::AsyncIo));
-        EXECUTOR.with(|executor| async_io::block_on(executor.run(test())))?;
+        EXECUTOR.with(|executor| {
+            async_io::block_on(executor.run(async {
+                let result = test().await;
+                diagnostic_phase("test returned; leaving executor");
+                result
+            }))
+        })?;
+        diagnostic_phase("executor returned");
     }
     ADAPTER.set(None);
     Ok(())

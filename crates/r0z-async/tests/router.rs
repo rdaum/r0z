@@ -70,7 +70,9 @@ async fn router_receive_hammer<S: Stream<Item = Result<Multipart>> + Unpin>(
     let data = vec!["hello", "world"];
     let thread = sync_send_multipart_repeated(address, SocketType::DEALER, data.clone(), count);
 
-    for _ in 0..count {
+    let progress = utils::Progress::new("receiver", count);
+    progress.phase("receiving");
+    for completed in 1..=count {
         let mut message = stream.next().await.unwrap()?;
         assert_eq!(message.len(), 3);
         message.pop_front().unwrap();
@@ -78,9 +80,15 @@ async fn router_receive_hammer<S: Stream<Item = Result<Multipart>> + Unpin>(
             message,
             data.iter().map(|i| i.into()).collect::<Multipart>()
         );
+        progress.advance(completed);
     }
 
+    utils::diagnostic_phase("joining sender");
     thread.join().unwrap();
+    progress.phase("dropping stream");
+    drop(stream);
+    progress.phase("stream dropped");
+    utils::diagnostic_phase("sender joined; returning to caller");
 
     Ok(())
 }
@@ -91,7 +99,11 @@ fn receive_hammer() -> Result<()> {
         let address = generate_tcp_address();
         let ctx = Context::new();
         let sock = utils::router(&ctx).bind(&address)?;
-        router_receive_hammer(sock, address).await
+        let result = router_receive_hammer(sock, address).await;
+        utils::diagnostic_phase("dropping receiver context");
+        drop(ctx);
+        utils::diagnostic_phase("receiver context dropped");
+        result
     })
 }
 

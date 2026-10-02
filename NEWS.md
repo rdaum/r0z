@@ -1,5 +1,8 @@
 # Unreleased (r0z workspace, 2026-10-02)
 
+- Added receive stress-test progress and shutdown diagnostics that survive watchdog aborts. Kept the
+  60-second deadline and disabled fail-fast cancellation for the adapter CI matrix.
+
 - Changed the async socket default to zero linger. Closing an async socket now discards queued
   outgoing messages. Set linger explicitly to permit a finite or infinite wait during context
   shutdown. Synchronous sockets retain the native default.

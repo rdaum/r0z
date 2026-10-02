@@ -57,6 +57,7 @@ jobs:
     name: Async adapters
     timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
         features: ["", "async-io", "tokio,async-io"]

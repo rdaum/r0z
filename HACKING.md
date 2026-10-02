@@ -50,6 +50,26 @@ runtime. A watchdog thread bounds each shared test, including native shutdown, t
 matrix covers the core alone, each built-in adapter, and both adapters on Linux and macOS. Windows
 CI covers the synchronous and FFI crates only.
 
+## Receive stress diagnostics
+
+To inspect the million-message DEALER test, run:
+
+```sh
+cargo test -p r0z-async --all-features --test dealer receive_hammer -- --exact
+```
+
+The stress tests report the test source, active adapter, elapsed time, and sender and receiver
+counts. Reports also identify socket/context drops, sender joins, and runtime shutdown. Counters
+update after each complete multipart. Progress logs appear after the first message, every 100,000
+messages, and at completion. The watchdog adds a snapshot every five seconds while progress tracking
+is active.
+
+Diagnostics write directly to stderr, so they survive a process abort with test capture enabled. The
+watchdog still aborts after 60 seconds for the whole shared test, including both adapters when
+enabled. Progress does not extend the deadline. Compare successive snapshots to distinguish slow
+traffic from a stall, then use the phase to locate blocked shutdown. Adapter CI jobs finish
+independently so one failure does not cancel the remaining combinations.
+
 ## Receive timeout and shutdown tests
 
 Run the isolated timeout cases with:

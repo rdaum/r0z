@@ -60,7 +60,11 @@ fn receive_hammer() -> Result<()> {
         let address = generate_tcp_address();
         let ctx = Context::new();
         let sock = utils::pull(&ctx).bind(&address)?;
-        hammer_receive(sock, address, SocketType::PUSH).await
+        let result = hammer_receive(sock, address, SocketType::PUSH).await;
+        utils::diagnostic_phase("dropping receiver context");
+        drop(ctx);
+        utils::diagnostic_phase("receiver context dropped");
+        result
     })
 }
 
@@ -70,7 +74,11 @@ fn receive_buffered_hammer() -> Result<()> {
         let address = generate_tcp_address();
         let ctx = Context::new();
         let sock = utils::pull(&ctx).bind(&address)?;
-        hammer_receive(sock.buffered(1024), address, SocketType::PUSH).await
+        let result = hammer_receive(sock.buffered(1024), address, SocketType::PUSH).await;
+        utils::diagnostic_phase("dropping receiver context");
+        drop(ctx);
+        utils::diagnostic_phase("receiver context dropped");
+        result
     })
 }
 
