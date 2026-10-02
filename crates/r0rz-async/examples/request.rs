@@ -19,9 +19,8 @@ async fn main() -> Result<()> {
 
         info!("Request: {:?}", message);
         let message: Message = message.as_bytes().into();
-        let recv_sock = send_sock.send(message.into()).await?;
-        let (msg, send) = recv_sock.recv().await?;
-        send_sock = send;
+        send_sock.send(message.into()).await?;
+        let msg = send_sock.recv().await?;
         info!(
             "Reply: {:?}",
             msg.iter()

@@ -121,8 +121,10 @@ Replace the Cargo dependencies and Rust imports:
 | `zmq-sys`        | `r0rz-sys`   | `zmq_sys::` → `r0rz_sys::` |
 | `tmq`            | `r0rz-async` | `tmq::` → `r0rz_async::`   |
 
-The existing async type names, including `TmqError` and `AsZmqSocket`, remain unchanged. To reduce
-source edits, you can use Cargo dependency aliases:
+`TmqError` and `AsZmqSocket` retain their names. Request/reply sockets now use `RequestReply` with
+borrowing operations. See the
+[async migration guide](crates/r0rz-async/README.md#requestreply-ownership-and-migration). To reduce
+import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]

@@ -11,6 +11,14 @@ pub enum TmqError {
         "Interrupted Zmq send. Please report this at https://github.com/rdaum/rust-zmq/issues"
     )]
     InterruptedSend,
+    /// An operation does not match the tracked REQ/REP protocol state.
+    #[error("Cannot {operation} a request/reply socket in state {state:?}")]
+    InvalidRequestReplyState {
+        /// The rejected operation.
+        operation: &'static str,
+        /// The unchanged socket state.
+        state: crate::request_reply::RequestReplyState,
+    },
     /// General IO error.
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),

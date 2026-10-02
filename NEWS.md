@@ -1,5 +1,10 @@
 # Unreleased (r0rz workspace, 2026-10-02)
 
+- Replaced consuming request/reply wrappers with `RequestReply` and borrowing operations. Update
+  stored types and send/receive calls as described in the async migration guide.
+- Added explicit request/reply state, resumable buffered sends, and cancellation and error tests
+  under both adapters. Added a `select!` timeout example that retains its socket.
+
 - Added optional Tokio and async-io runtime adapters with per-socket selection.
 - Shared the ZeroMQ readiness and multipart logic across adapters, including separate send and
   receive wakeups.

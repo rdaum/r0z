@@ -382,13 +382,13 @@ pub fn push(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::push::Pu
 
 pub fn reply(
     context: &Context,
-) -> r0rz_async::SocketBuilder<r0rz_async::request_reply::RequestReceiver> {
+) -> r0rz_async::SocketBuilder<r0rz_async::request_reply::RequestReply> {
     select(r0rz_async::reply(context))
 }
 
 pub fn request(
     context: &Context,
-) -> r0rz_async::SocketBuilder<r0rz_async::request_reply::RequestSender> {
+) -> r0rz_async::SocketBuilder<r0rz_async::request_reply::RequestReply> {
     select(r0rz_async::request(context))
 }
 

@@ -33,4 +33,6 @@ Changes made in this workspace:
 
 The initial import preserved socket behaviour. Later changes added runtime adapters for Tokio and
 async-io, shared readiness handling, and tests across both adapters. Built-in adapters currently
-support Unix. Request/reply ownership and payload-copy improvements remain separate work.
+support Unix. Request/reply operations now borrow a `RequestReply` socket, with explicit protocol
+state and a buffered send that survives cancellation. Payload-copy improvements remain separate
+work.

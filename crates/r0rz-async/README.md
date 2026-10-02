@@ -84,7 +84,56 @@ Both built-in adapters currently support Unix only. On Windows, `ZMQ_FD` returns
 Unix file descriptor. Windows needs a separate validated registration path. This change does not
 establish Windows or compio support.
 
-Request/reply operations still consume their socket wrappers. Cancellation of those operations still
-drops the wrapper. The [ownership ticket](https://github.com/rdaum/rust-zmq/issues/1) tracks that
-API change. Cancelling a stream receive keeps its socket available. Cancelling a sink send can leave
-a buffered multipart for a later flush.
+## Request/reply ownership and migration
+
+`request()` and `reply()` now return `RequestReply`. This replaces `RequestSender` and
+`RequestReceiver`. Both `send` and `recv` borrow the socket. Update stored socket types and remove
+the assignments that transferred ownership between operations:
+
+```rust,no_run
+# async fn exchange(context: &r0rz_async::Context) -> r0rz_async::Result<()> {
+let mut socket = r0rz_async::request(context).connect("tcp://127.0.0.1:7897")?;
+socket.send(vec!["hello"].into()).await?;
+let reply = socket.recv().await?;
+# Ok(())
+# }
+```
+
+Use `state()` to inspect the next permitted operation:
+
+| State          | Permitted operation                                         |
+| -------------- | ----------------------------------------------------------- |
+| `SendReady`    | Send a new multipart.                                       |
+| `SendPending`  | Call `flush()` to finish the buffered multipart.            |
+| `ReceiveReady` | Receive the next multipart.                                 |
+| `Failed`       | Inspect or drop the socket. Recreate it before further I/O. |
+
+A REQ socket starts in `SendReady`. A REP socket starts in `ReceiveReady`. Successful operations
+alternate between sending and receiving. Invalid calls return `InvalidRequestReplyState` without
+changing the socket state. An empty multipart returns `EINVAL`. One empty frame is a valid message.
+
+Cancelling a pending receive preserves the socket and its protocol state. Call `recv()` again to
+wait for the same reply. A timeout does not permit a REQ socket to send another request. To abandon
+that exchange, drop the socket and create another one.
+
+Once polled, a pending send keeps its multipart in the socket. Call `flush()` to resume it. Another
+`send()` cannot replace that message. If a send future is never polled, dropping it leaves the
+socket unchanged and drops its message. Successful sends remain sent after later cancellation.
+
+Native and reactor errors leave the socket owned by the caller but mark it `Failed`. An error can
+occur after some multipart frames were sent or received. This API requires socket replacement
+because it cannot establish safe recovery from every such error. Validation errors do not mark the
+socket as failed.
+
+Use native socket access for inspection and configuration only. Direct native I/O and relaxed REQ
+sequencing bypass the protocol state tracked by this wrapper.
+
+Async operations use native `DONTWAIT`. Native `RCVTIMEO` and `SNDTIMEO` do not set async deadlines.
+Use the timer or selection API of your runtime. The
+[`request_timeout` example](examples/request_timeout.rs) retains the socket after a timer wins
+`tokio::select!`, then receives the delayed reply.
+
+Cancellation does not change native linger. The default linger can delay context shutdown while
+outgoing messages remain undelivered. Set linger to zero before shutdown to discard queued messages
+when this is acceptable. The [ownership ticket](https://github.com/rdaum/rust-zmq/issues/1) and
+[timeout investigation](https://github.com/rdaum/rust-zmq/issues/2) record the related work.

@@ -55,8 +55,8 @@ fn split_dealer_reply_tasks() -> Result<()> {
             let peer = utils::spawn(async move {
                 let mut reply = reply;
                 for _ in 0..100 {
-                    let (message, sender) = reply.recv().await.unwrap();
-                    reply = sender.send(message).await.unwrap();
+                    let message = reply.recv().await.unwrap();
+                    reply.send(message).await.unwrap();
                 }
             });
             reader.await.unwrap();
