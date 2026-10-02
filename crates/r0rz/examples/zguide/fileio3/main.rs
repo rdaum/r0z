@@ -6,8 +6,8 @@
 //! command pipelining to give us a credit-based flow control.
 
 use r0rz::SNDMORE;
-use rand::distributions::Alphanumeric;
-use rand::Rng;
+use rand::distr::Alphanumeric;
+use rand::RngExt;
 use std::fs::File;
 use std::io::{Error, Read, Seek, SeekFrom, Write};
 use std::thread;
@@ -20,7 +20,7 @@ static PIPELINE_HWM: usize = 20;
 
 fn random_string(length: usize) -> String {
     String::from_utf8(
-        rand::thread_rng()
+        rand::rng()
             .sample_iter(&Alphanumeric)
             .take(length)
             .collect(),

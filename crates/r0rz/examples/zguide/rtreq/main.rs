@@ -3,7 +3,7 @@
 //! Router-to-request example
 
 use r0rz::SNDMORE;
-use rand::Rng;
+use rand::RngExt;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -19,7 +19,7 @@ fn hex(bytes: &[u8]) -> String {
 fn worker_task() {
     let context = r0rz::Context::new();
     let worker = context.socket(r0rz::REQ).unwrap();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let identity: Vec<_> = (0..10).map(|_| rand::random::<u8>()).collect();
     worker.set_identity(&identity).unwrap();
     assert!(worker.connect("tcp://localhost:5671").is_ok());
@@ -38,7 +38,7 @@ fn worker_task() {
         total += 1;
 
         // Do some random work
-        thread::sleep(Duration::from_millis(rng.gen_range(1..500)));
+        thread::sleep(Duration::from_millis(rng.random_range(1..500)));
     }
 }
 

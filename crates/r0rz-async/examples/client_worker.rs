@@ -15,13 +15,13 @@
 
 use futures::{future, SinkExt, StreamExt};
 use r0rz_async::{dealer, router, Context, Multipart};
-use rand::Rng;
+use rand::RngExt;
 use std::{error::Error, rc::Rc, time::Duration};
 use tokio::time::sleep;
 
 async fn client(ctx: Rc<Context>, client_id: u64, frontend: String) -> r0rz_async::Result<()> {
     let mut sock = dealer(&ctx).connect(&frontend)?;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let client_id = client_id.to_string();
     let mut request_id = 0;
@@ -37,14 +37,14 @@ async fn client(ctx: Rc<Context>, client_id: u64, frontend: String) -> r0rz_asyn
             vec![client_id.as_bytes(), request_id_str.as_bytes(), b"response"].into();
         assert_eq!(expected, response);
 
-        let sleep_time = rng.gen_range(200..1000);
+        let sleep_time = rng.random_range(200..1000);
         sleep(Duration::from_millis(sleep_time)).await;
         request_id += 1;
     }
 }
 async fn worker(ctx: Rc<Context>, worker_id: u64, backend: String) -> Result<(), Box<dyn Error>> {
     let mut sock = dealer(&ctx).connect(&backend)?;
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     loop {
         let mut request = sock.next().await.unwrap()?;
@@ -62,7 +62,7 @@ async fn worker(ctx: Rc<Context>, worker_id: u64, backend: String) -> Result<(),
         );
 
         // simulate work
-        let sleep_time = rng.gen_range(100..3000);
+        let sleep_time = rng.random_range(100..3000);
         sleep(Duration::from_millis(sleep_time)).await;
 
         let response = vec![identity, client_id, request_id, "response".into()];

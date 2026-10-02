@@ -7,7 +7,7 @@ use r0rz::{Context, SocketType};
 
 use futures::StreamExt;
 use r0rz_async::{Multipart, Result, TmqError};
-use rand::Rng;
+use rand::RngExt;
 use std::sync::{Arc, Barrier};
 
 /// Synchronous send and receive functions running in a separate thread.
@@ -224,8 +224,8 @@ pub async fn hammer_receive<S: Stream<Item = Result<Multipart>> + Unpin>(
 
 /// Helper functions
 pub fn generate_tcp_address() -> String {
-    let mut rng = rand::thread_rng();
-    let port = rng.gen_range(2000..65000);
+    let mut rng = rand::rng();
+    let port = rng.random_range(2000..65000);
     format!("tcp://127.0.0.1:{}", port)
 }
 

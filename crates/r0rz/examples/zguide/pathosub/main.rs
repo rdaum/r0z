@@ -3,7 +3,7 @@
 
 use std::env;
 
-use rand::distributions::{Distribution, Uniform};
+use rand::distr::{Distribution, Uniform};
 
 fn main() {
     let context = r0rz::Context::new();
@@ -19,8 +19,8 @@ fn main() {
         .connect(address)
         .expect("could not connect to publisher");
 
-    let mut rng = rand::thread_rng();
-    let topic_range = Uniform::new(0, 1000);
+    let mut rng = rand::rng();
+    let topic_range = Uniform::new(0, 1000).unwrap();
     let subscription = format!("{:03}", topic_range.sample(&mut rng)).into_bytes();
     subscriber.set_subscribe(&subscription).unwrap();
 
