@@ -1,118 +1,175 @@
-Rust ZeroMQ bindings.
+# r0rz
 
-[![Travis Build Status](https://travis-ci.org/erickt/rust-zmq.png?branch=master)](https://travis-ci.org/erickt/rust-zmq)
-[![Appveyor Build status](https://ci.appveyor.com/api/projects/status/xhytsx4jwyb9qk7m?svg=true)](https://ci.appveyor.com/project/erickt/rust-zmq)
-[![Coverage Status](https://coveralls.io/repos/erickt/erickt-zmq/badge.svg?branch=master)](https://coveralls.io/r/erickt/erickt-zmq?branch=master)
-[![Apache 2.0 licensed](https://img.shields.io/badge/license-Apache2.0-blue.svg)](./LICENSE-APACHE)
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE-MIT)
-[![crates.io](http://meritbadge.herokuapp.com/zmq)](https://crates.io/crates/zmq)
-[![docs](https://docs.rs/zmq/badge.svg)](https://docs.rs/zmq)
+**r0rz** (pronounced “roars”) provides Rust bindings to native [ZeroMQ](https://zeromq.org/), through the `libzmq` C API.
 
-[Documentation](https://docs.rs/crate/zmq/)
+It is not a new implementation of ZeroMQ written in Rust.
 
-[Release Notes](./NEWS.md)
+Native `libzmq` handles messaging, transports, queues, and protocol behavior.
 
-# About
+This workspace maintains synchronous bindings, native FFI bindings, and async bindings together.
 
-The `zmq` crate provides bindings for the `libzmq` library from the
-[ZeroMQ](https://zeromq.org/) project. The API exposed by `zmq` should
-be safe (in the usual Rust sense), but it follows the C API closely,
-so it is not very idiomatic.
+It continues the work of [`rust-zmq`](https://github.com/erickt/rust-zmq) and [`tmq`](https://github.com/cetra3/tmq).
 
-# Workspace
+[Changes](NEWS.md) · [Build and test](HACKING.md) · [Contributing](CONTRIBUTING.md) · [Source and licenses](PROVENANCE.md)
 
-This repository contains a Cargo workspace for synchronous and asynchronous ZeroMQ bindings.
+## Why this fork exists
 
-| Directory | Package | Purpose |
-| --- | --- | --- |
-| `crates/zmq` | `zmq` | Safe synchronous bindings |
-| `crates/zmq-sys` | `zmq-sys` | Native build and FFI bindings |
-| `crates/zmq-async` | `tmq` | Async bindings imported from `tmq` |
+I started this fork because my downstream projects, including [mooR](https://github.com/rdaum/moor), needed maintained ZeroMQ bindings -- both sync and async.
+They used both `zmq` (which was abandoned) and `tmq` (which depended on it), so problems in either crate affected them.
+Also, while other people have created from-scratch native Rust bindings but a) I don't yet trust their provenance / status b) I need both sync and async implementations and not to be tied to tokio everywhere.
 
-The async crate currently requires Tokio and Unix. Runtime independence is planned but not yet implemented.
-Package names remain unchanged. The imported `tmq` package has publication disabled until it receives a new name.
-See [async import details](crates/zmq-async/UPSTREAM.md) for its source and attribution.
-See [workspace commands](HACKING.md#workspace-commands) for build and test instructions.
+By March 2026, `rust-zmq` was effectively abandoned.
+Its last published `zmq` release was [0.10.0](https://crates.io/crates/zmq/0.10.0), from November 2022.
+Its latest upstream commit was from [May 2025](https://github.com/erickt/rust-zmq/commit/5d78967001abb1aece2fba878d6151cb66cd1767).
+Fixes and release requests remained open.
 
-# Fork Status
+The upstream owner [said they no longer used the project](https://github.com/erickt/rust-zmq/issues/402#issuecomment-3981188261) and were open to a handoff.
+I [offered to take over maintenance](https://github.com/erickt/rust-zmq/issues/402#issuecomment-3981192243).
+As of October 2, 2026, that offer had received no reply, and no handoff had occurred.
+So this is now an independent fork.
 
-This repository is a maintained fork of
-[erickt/rust-zmq](https://github.com/erickt/rust-zmq).
+`tmq` 0.5.0 depended on `zmq` 0.10.0 and so inherited its maintenance problem.
+Its async API also needs attention.
+The [open tickets](#development) track those concerns and link to the original upstream reports.
 
-Why this fork exists:
+Keeping the crates together lets changes to the native, synchronous, and async layers be tested together.
+The new name(s) are meant give this maintenance work its own release path.
 
-- Upstream appears to have limited maintenance activity.
-- There was significant backlog in open pull requests and issues.
-- Downstream users needed fixes that were not available in a published release.
+## Workspace
 
-What has been integrated in this fork:
+| Package | Rust import | Purpose | Current platform support |
+| --- | --- | --- | --- |
+| [`r0rz`](crates/r0rz) | `r0rz` | Safe synchronous bindings to `libzmq` | Linux, macOS, Windows |
+| [`r0rz-sys`](crates/r0rz-sys) | `r0rz_sys` | Native library build and unsafe FFI bindings | Linux, macOS, Windows |
+| [`r0rz-async`](crates/r0rz-async) | `r0rz_async` | Async sockets built on `r0rz` | Unix, with Tokio |
 
-- Curve/libsodium support fixes and build integration.
-- `zmq-sys` dependency updates and zeromq-src baseline updates.
-- Selected non-breaking API improvements: `ZMQ_INVERT_MATCHING`,
-  `ZMQ_TCP_MAXRT`, `set_xpub_verboser`, and `AsFd`/`AsSocket` support.
-- 32-bit build compatibility and test/toolchain upkeep (bitflags 2.x, trybuild snapshots).
-- Safety/correctness hardening: reject interior-NUL property names in `has`
-  and `Message::gets`; guard pathological `Message` allocation sizes.
-- Added fuzzing harness + scheduled ASAN smoke workflow.
+The synchronous API follows the native C API closely.
+The async crate supports request/reply, publish/subscribe, dealer/router, and push/pull sockets.
+It provides `futures` streams and sinks where the socket pattern permits them.
 
-This fork currently keeps crate package names unchanged (`zmq`, `zmq-sys`) to
-minimize downstream migration cost.
+The async crate currently requires Tokio and Unix.
+[Runtime portability](https://github.com/rdaum/rust-zmq/issues/4) is planned.
 
-If you need to force this fork in a workspace:
+## Development
+
+The fork integrates upstream fixes and maintains all three crates in one workspace.
+See [NEWS.md](NEWS.md) for completed changes and original pull request numbers.
+
+Open tickets cover [socket ownership and cancellation (#1)](https://github.com/rdaum/rust-zmq/issues/1),
+[receive timeouts (#2)](https://github.com/rdaum/rust-zmq/issues/2), and
+[split socket hangs (#3)](https://github.com/rdaum/rust-zmq/issues/3).
+Planned improvements cover [runtime portability (#4)](https://github.com/rdaum/rust-zmq/issues/4) and
+[message copies (#5)](https://github.com/rdaum/rust-zmq/issues/5).
+The tickets contain the evidence, proposed work, and acceptance criteria.
+
+## Use the bindings
+
+The renamed crates are not yet published.
+For development, use local paths to this checkout:
 
 ```toml
-[patch.crates-io]
-zmq = { git = "https://github.com/rdaum/rust-zmq.git", branch = "main" }
-zmq-sys = { git = "https://github.com/rdaum/rust-zmq.git", branch = "main" }
+[dependencies]
+r0rz = { path = "../rust-zmq/crates/r0rz" }
+# Add this dependency if you need async sockets:
+r0rz-async = { path = "../rust-zmq/crates/r0rz-async" }
 ```
 
-# Compatibility
+Adjust these paths for your project.
+Applications normally need no direct dependency on `r0rz-sys`.
 
-The aim of this project is to track latest zmq releases as close as possible.
-
-Regarding the minimum Rust version required, `zmq` is CI-tested on current 
-stable channels of Rust. 
-
-# Usage
-
-`zmq` is a pretty straight forward port of the C API into Rust:
+This example sends a message between two sockets in one process:
 
 ```rust
-fn main() {
-    let ctx = zmq::Context::new();
+fn main() -> r0rz::Result<()> {
+    let context = r0rz::Context::new();
+    let sender = context.socket(r0rz::PAIR)?;
+    let receiver = context.socket(r0rz::PAIR)?;
+    sender.set_linger(0)?;
+    receiver.set_linger(0)?;
 
-    let socket = ctx.socket(zmq::REQ).unwrap();
-    socket.connect("tcp://127.0.0.1:1234").unwrap();
-    socket.send("hello world!", 0).unwrap();
+    receiver.bind("inproc://example")?;
+    sender.connect("inproc://example")?;
+    sender.send("hello", 0)?;
+    assert_eq!(receiver.recv_bytes(0)?, b"hello");
+    Ok(())
 }
 ```
 
-You can find more usage examples in
-[the synchronous examples](crates/zmq/examples) and [the async examples](crates/zmq-async/examples).
+See the [synchronous examples](crates/r0rz/examples) and [async examples](crates/r0rz-async/examples) for more socket patterns.
+To generate API documentation, run:
 
-# Notes
+```sh
+cargo doc --workspace --no-deps --open
+```
 
-## Process environment safety
+On Windows, add `--exclude r0rz-async`.
 
-`libzmq` may read process environment variables internally. Avoid mutating the
-process environment (for example via `std::env::set_var`/`remove_var`) after
-creating `zmq::Context` values or while other threads may be using `zmq`.
+## Migrate from `zmq` and `tmq`
 
-## Shutdown and linger
+Replace the Cargo dependencies and Rust imports:
 
-Sockets default to `ZMQ_LINGER = -1` (infinite), so dropping a socket can block
-while pending outbound messages flush. For fast shutdown, set `socket.set_linger(0)`.
+| Previous package | New package | Import change |
+| --- | --- | --- |
+| `zmq` | `r0rz` | `zmq::` → `r0rz::` |
+| `zmq-sys` | `r0rz-sys` | `zmq_sys::` → `r0rz_sys::` |
+| `tmq` | `r0rz-async` | `tmq::` → `r0rz_async::` |
 
-# Contributing
+The existing async type names, including `TmqError` and `AsZmqSocket`, remain unchanged.
+To reduce source edits, you can use Cargo dependency aliases:
 
-Unless you explicitly state otherwise, any contribution intentionally
-submitted for inclusion in the work by you, as defined in the
-Apache-2.0 license, shall be dual licensed under the terms of both the
-Apache License, Version 2.0 and the MIT license without any additional
-terms or conditions.
+```toml
+[dependencies]
+zmq = { package = "r0rz", path = "../rust-zmq/crates/r0rz" }
+tmq = { package = "r0rz-async", path = "../rust-zmq/crates/r0rz-async" }
+```
 
-See the [contribution guidelines] for what to watch out for when
-submitting a pull request.
+Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages.
+The new packages cannot replace those names through a patch alone.
+Migrate dependencies that still use the old bindings too.
+Both native binding packages declare `links = "zmq"`, so Cargo cannot include both in one dependency graph.
 
-[contribution guidelines]: ./CONTRIBUTING.md
+## Build and test
+
+Use current stable Rust and a native C/C++ build toolchain.
+The build compiles `libzmq` from source through `zeromq-src`; the current dependency baseline bundles ZeroMQ 4.3.5.
+The synchronous crate enables libsodium support for CURVE encryption.
+Installing a system ZeroMQ library alone does not replace this source build.
+
+On Linux or macOS:
+
+```sh
+cargo test --workspace --all-targets
+cargo test --workspace --doc
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+On Windows, add `--exclude r0rz-async` to each command.
+See [HACKING.md](HACKING.md) for more commands, including the separate fuzz and consumer projects.
+
+## Native behavior to account for
+
+Configure process environment variables before creating contexts or starting threads that use `libzmq`.
+Native code can read the environment while it runs.
+Concurrent environment changes can be unsafe.
+
+Sockets use infinite linger by default (`ZMQ_LINGER = -1`).
+Context shutdown can wait indefinitely for pending outbound messages.
+For shutdown that discards queued messages, set `socket.set_linger(0)`.
+
+## Source and licenses
+
+The synchronous and FFI crates descend from `erickt/rust-zmq` at commit
+[`5d78967001abb1aece2fba878d6151cb66cd1767`](https://github.com/erickt/rust-zmq/commit/5d78967001abb1aece2fba878d6151cb66cd1767).
+The async crate was imported from `cetra3/tmq` 0.5.0 at commit
+[`538cce9b0fed9dd90a4bb3bcf28eb54e1f94973b`](https://github.com/cetra3/tmq/commit/538cce9b0fed9dd90a4bb3bcf28eb54e1f94973b).
+Original authors and the existing Rust binding license terms are retained.
+
+Both upstream Rust projects declare **MIT OR Apache-2.0**, which permits this combined workspace under the same terms.
+You may choose either license for the Rust bindings.
+See [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE), and the [async license notices](crates/r0rz-async/UPSTREAM.md).
+
+Native dependencies retain their own licenses: `libzmq` uses MPL-2.0, and libsodium uses ISC.
+These can be combined with the Rust bindings, subject to their notice and source distribution requirements.
+See [PROVENANCE.md](PROVENANCE.md) for source links, attribution, and the license review.
+
+Unless you explicitly state otherwise, contributions are licensed under both MIT and Apache-2.0, without additional terms.

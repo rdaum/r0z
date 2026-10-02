@@ -1,5 +1,5 @@
 [package]
-name = "zmq-fuzz"
+name = "r0rz-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2021"
@@ -10,8 +10,8 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4"
 
-[dependencies.zmq]
-path = "../crates/zmq"
+[dependencies.r0rz]
+path = "../crates/r0rz"
 
 [workspace]
 members = ["."]

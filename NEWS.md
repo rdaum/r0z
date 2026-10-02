@@ -1,3 +1,14 @@
+# Unreleased (r0rz workspace, 2026-10-02)
+
+- Renamed `zmq` to `r0rz` and `zmq-sys` to `r0rz-sys`.
+- Imported `tmq` 0.5.0 as `r0rz-async` in the same Cargo workspace.
+- Updated imports, examples, tests, CI, and standalone consumer paths.
+- Recorded upstream source commits, authors, and license terms.
+- Rewrote the README to explain the fork, native dependencies, and migration.
+- The async implementation still requires Tokio and Unix. Runtime portability remains planned.
+
+The entries below retain historical package names and describe earlier fork policy.
+
 # Unreleased (Fork: rdaum/rust-zmq, as of 2026-03-01)
 
 This changelog entry documents the fork maintenance line on top of `v0.10.0`.

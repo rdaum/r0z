@@ -1,6 +1,6 @@
-# Contributing to rust-zmq
+# Contributing to r0rz
 
-Thank you for your interest in contributing to rust-zmq!
+Thank you for your interest in contributing to r0rz!
 
 ## Bug reports
 
@@ -12,7 +12,7 @@ long.
 
 If you find a missing feature, such as functionality provided by the
 underlying `libzmq` library, but not available via the Rust API
-provided by the `zmq` crate, or a suggestion to improve the existing
+provided by the `r0rz` crate, or a suggestion to improve the existing
 API to make it more ergonomic, please file an issue before starting to
 work on a pull request, especially when the feature requires API
 changes or adds to the existing API in non-trivial ways.
@@ -23,7 +23,7 @@ that need to be considered when tackling the feature.
 
 ## Pull requests
 
-rust-zmq uses the "fork and pull" model [described
+r0rz uses the "fork and pull" model [described
 here](https://help.github.com/en/articles/about-collaborative-development-models). It
 is highly recommended that you create a dedicated branch in your
 repository for each pull request you submit, instead of submitting
@@ -33,7 +33,7 @@ avoid rewriting history on your fork's `master` branch (see below).
 
 ### Version history
 
-The rust-zmq project aims to keep the version history useful and
+The r0rz project aims to keep the version history useful and
 reasonably simple. Thus, when preparing and updating your pull
 request, you should make liberal use of git's history rewriting
 capabilities, such as amending and squashing commits. Try to observe

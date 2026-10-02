@@ -14,10 +14,10 @@ fuzz_target!(|data: &[u8]| {
     // size-boundary paths in Message constructors.
     let len = (u64::from_le_bytes(len_bytes) as usize) & 0x00FF_FFFF;
 
-    let _ = zmq::Message::with_size(len);
+    let _ = r0rz::Message::with_size(len);
 
     #[allow(deprecated)]
     unsafe {
-        let _ = zmq::Message::with_capacity_unallocated(len);
+        let _ = r0rz::Message::with_capacity_unallocated(len);
     }
 });

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/zmq", "crates/zmq-sys", "crates/zmq-async"]
+members = ["crates/r0rz", "crates/r0rz-sys", "crates/r0rz-async"]
 exclude = ["fuzz", "msrv-test"]
 
 [workspace.package]
@@ -8,8 +8,8 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/rdaum/rust-zmq"
 
 [workspace.dependencies]
-zmq = { version = "0.10.0", path = "crates/zmq" }
-zmq-sys = { version = "0.13.0", path = "crates/zmq-sys", features = ["libsodium"] }
+r0rz = { version = "0.10.0", path = "crates/r0rz" }
+r0rz-sys = { version = "0.13.0", path = "crates/r0rz-sys", features = ["libsodium"] }
 bitflags = "2.3"
 libc = "0.2.25"
 libsodium-sys-stable = "1.0"
