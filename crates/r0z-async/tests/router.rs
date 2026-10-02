@@ -170,6 +170,17 @@ fn echo() -> Result<()> {
 
 #[test]
 fn proxy() -> Result<()> {
+    run_proxy(100)
+}
+
+#[test]
+#[ignore = "30,000-exchange proxy stress test; run explicitly"]
+fn proxy_stress() -> Result<()> {
+    run_proxy(10_000)
+}
+
+#[track_caller]
+fn run_proxy(count: u64) -> Result<()> {
     utils::run(|| async {
         let frontend = generate_tcp_address();
         let backend = generate_tcp_address();
@@ -177,7 +188,6 @@ fn proxy() -> Result<()> {
         let router = utils::router(&ctx).bind(&frontend)?;
         let dealer = utils::dealer(&ctx).bind(&backend)?;
 
-        let count: u64 = 10_000;
         let client_count: u64 = 3;
         let worker_count: u64 = 2;
         let task_count: u64 = client_count * count;
