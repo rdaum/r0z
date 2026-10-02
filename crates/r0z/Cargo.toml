@@ -1,0 +1,172 @@
+[package]
+name = "r0z"
+version = "0.10.0"
+authors = [
+    "a.rottmann@gmx.at",
+    "erick.tryzelaar@gmail.com",
+    "opensource@traversersearch.nl",
+]
+categories = ["api-bindings", "network-programming"]
+edition = "2018"
+keywords = ["bindings", "protocol"]
+license.workspace = true
+readme = "../../README.md"
+repository.workspace = true
+description = "Safe Rust bindings to native ZeroMQ (libzmq)"
+
+[badges]
+maintenance = { status = "actively-maintained" }
+
+[features]
+default = ["zmq_has"]
+# zmq_has was added in zeromq 4.1. As we now require 4.1 or newer,
+# this feature is a no-op and only present for backward-compatibility;
+# it will be removed in the next API-breaking release.
+zmq_has = []
+
+[dependencies]
+bitflags.workspace = true
+libc.workspace = true
+r0z-sys.workspace = true
+
+[dev-dependencies]
+env_logger.workspace = true
+log.workspace = true
+nix.workspace = true
+quickcheck.workspace = true
+rand.workspace = true
+tempfile.workspace = true
+timebomb.workspace = true
+trybuild.workspace = true
+
+[[example]]
+name = "helloworld_client"
+path = "examples/zguide/helloworld_client/main.rs"
+
+[[example]]
+name = "helloworld_server"
+path = "examples/zguide/helloworld_server/main.rs"
+
+[[example]]
+name = "msreader"
+path = "examples/zguide/msreader/main.rs"
+
+[[example]]
+name = "mspoller"
+path = "examples/zguide/mspoller/main.rs"
+
+[[example]]
+name = "pathopub"
+path = "examples/zguide/pathopub/main.rs"
+
+[[example]]
+name = "pathosub"
+path = "examples/zguide/pathosub/main.rs"
+
+[[example]]
+name = "lvcache"
+path = "examples/zguide/lvcache/main.rs"
+
+[[example]]
+name = "msgsend"
+path = "examples/msgsend/main.rs"
+
+[[example]]
+name = "stream-logserver"
+path = "examples/stream/logserver.rs"
+
+[[example]]
+name = "tasksink"
+path = "examples/zguide/tasksink/main.rs"
+
+[[example]]
+name = "taskvent"
+path = "examples/zguide/taskvent/main.rs"
+
+[[example]]
+name = "taskwork"
+path = "examples/zguide/taskwork/main.rs"
+
+[[example]]
+name = "version"
+path = "examples/zguide/version/main.rs"
+
+[[example]]
+name = "weather_client"
+path = "examples/zguide/weather_client/main.rs"
+
+[[example]]
+name = "weather_server"
+path = "examples/zguide/weather_server/main.rs"
+
+[[example]]
+name = "rtdealer"
+path = "examples/zguide/rtdealer/main.rs"
+
+[[example]]
+name = "fileio3"
+path = "examples/zguide/fileio3/main.rs"
+
+[[example]]
+name = "rrclient"
+path = "examples/zguide/rrclient/main.rs"
+
+[[example]]
+name = "rrworker"
+path = "examples/zguide/rrworker/main.rs"
+
+[[example]]
+name = "rrbroker"
+path = "examples/zguide/rrbroker/main.rs"
+
+[[example]]
+name = "msgqueue"
+path = "examples/zguide/msgqueue/main.rs"
+
+[[example]]
+name = "wuproxy"
+path = "examples/zguide/wuproxy/main.rs"
+
+[[example]]
+name = "tasksink2"
+path = "examples/zguide/tasksink2/main.rs"
+
+[[example]]
+name = "taskwork2"
+path = "examples/zguide/taskwork2/main.rs"
+
+[[example]]
+name = "mtserver"
+path = "examples/zguide/mtserver/main.rs"
+
+[[example]]
+name = "mtrelay"
+path = "examples/zguide/mtrelay/main.rs"
+
+[[example]]
+name = "syncpub"
+path = "examples/zguide/syncpub/main.rs"
+
+[[example]]
+name = "syncsub"
+path = "examples/zguide/syncsub/main.rs"
+
+[[example]]
+name = "psenvpub"
+path = "examples/zguide/psenvpub/main.rs"
+
+[[example]]
+name = "psenvsub"
+path = "examples/zguide/psenvsub/main.rs"
+
+[[example]]
+name = "rtreq"
+path = "examples/zguide/rtreq/main.rs"
+
+[[example]]
+name = "lbbroker"
+path = "examples/zguide/lbbroker/main.rs"
+
+[[example]]
+name = "asyncsrv"
+path = "examples/zguide/asyncsrv/main.rs"

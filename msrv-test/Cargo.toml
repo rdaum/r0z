@@ -5,4 +5,4 @@ authors = ["Andreas Rottmann <a.rottmann@gmx.at>"]
 edition = "2018"
 
 [dependencies]
-r0rz = { path = "../crates/r0rz" }
+r0z = { path = "../crates/r0z" }

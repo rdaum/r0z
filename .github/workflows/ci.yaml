@@ -13,7 +13,7 @@ jobs:
           - os: macos-latest
             packages: --workspace
           - os: windows-latest
-            packages: --workspace --exclude r0rz-async
+            packages: --workspace --exclude r0z-async
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -29,7 +29,7 @@ jobs:
           - os: macos-latest
             packages: --workspace
           - os: windows-latest
-            packages: --workspace --exclude r0rz-async
+            packages: --workspace --exclude r0z-async
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -47,7 +47,7 @@ jobs:
           - os: macos-latest
             packages: --workspace
           - os: windows-latest
-            packages: --workspace --exclude r0rz-async
+            packages: --workspace --exclude r0z-async
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -64,21 +64,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Check the async core and selected adapters
-        run: cargo check -p r0rz-async --no-default-features --features '${{ matrix.features }}' --lib
+        run: cargo check -p r0z-async --no-default-features --features '${{ matrix.features }}' --lib
       - name: Test the selected adapters
-        run: cargo test -p r0rz-async --no-default-features --features '${{ matrix.features }}' --all-targets
+        run: cargo test -p r0z-async --no-default-features --features '${{ matrix.features }}' --all-targets
       - name: Test documentation
-        run: cargo test -p r0rz-async --no-default-features --features '${{ matrix.features }}' --doc
+        run: cargo test -p r0z-async --no-default-features --features '${{ matrix.features }}' --doc
       - name: Lint the selected adapters
-        run: cargo clippy -p r0rz-async --no-default-features --features '${{ matrix.features }}' --all-targets -- -D warnings
+        run: cargo clippy -p r0z-async --no-default-features --features '${{ matrix.features }}' --all-targets -- -D warnings
       - name: Verify the dependency graph excludes Tokio
         if: matrix.features == '' || matrix.features == 'async-io'
         shell: bash
         run: |
-          cargo tree -p r0rz-async --no-default-features --features '${{ matrix.features }}' --edges normal,build --prefix none --format '{p}' > async-dependencies.txt
+          cargo tree -p r0z-async --no-default-features --features '${{ matrix.features }}' --edges normal,build --prefix none --format '{p}' > async-dependencies.txt
           if rg '^tokio ' async-dependencies.txt; then
             exit 1
           fi
       - name: Run the async-io example
         if: matrix.features == 'async-io'
-        run: cargo run -p r0rz-async --no-default-features --features async-io --example async_io
+        run: cargo run -p r0z-async --no-default-features --features async-io --example async_io

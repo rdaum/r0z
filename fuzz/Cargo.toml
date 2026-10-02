@@ -1,8 +1,8 @@
 [package]
-name = "r0rz-fuzz"
+name = "r0z-fuzz"
 version = "0.0.0"
-publish = false
 edition = "2021"
+publish = false
 
 [package.metadata]
 cargo-fuzz = true
@@ -10,8 +10,8 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = "0.4.13"
 
-[dependencies.r0rz]
-path = "../crates/r0rz"
+[dependencies.r0z]
+path = "../crates/r0z"
 
 [workspace]
 members = ["."]

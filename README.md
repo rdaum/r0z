@@ -1,7 +1,6 @@
-# r0rz
+# r0z
 
-**r0rz** (pronounced “roars”) provides Rust bindings to native [ZeroMQ](https://zeromq.org/),
-through the `libzmq` C API.
+**r0z** provides Rust bindings to native [ZeroMQ](https://zeromq.org/), through the `libzmq` C API.
 
 It is not a new implementation of ZeroMQ written in Rust.
 
@@ -20,7 +19,7 @@ It continues the work of [`rust-zmq`](https://github.com/erickt/rust-zmq) and
 I started this fork because my downstream projects, including [mooR](https://github.com/rdaum/moor),
 needed maintained ZeroMQ bindings -- both sync and async. They used both `zmq` (which was abandoned)
 and `tmq` (which depended on it), so problems in either crate affected them. Also, while other
-people have created from-scratch native Rust bindings but a) I don't yet trust their provenance /
+people have created from-scratch native Rust bindings: a) I don't yet trust their provenance /
 status b) I need both sync and async implementations and not to be tied to tokio everywhere.
 
 By March 2026, `rust-zmq` was effectively abandoned. Its last published `zmq` release was
@@ -44,18 +43,18 @@ together. The new name(s) are meant give this maintenance work its own release p
 
 ## Workspace
 
-| Package                           | Rust import  | Purpose                                      | Current platform support     |
-| --------------------------------- | ------------ | -------------------------------------------- | ---------------------------- |
-| [`r0rz`](crates/r0rz)             | `r0rz`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows        |
-| [`r0rz-sys`](crates/r0rz-sys)     | `r0rz_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows        |
-| [`r0rz-async`](crates/r0rz-async) | `r0rz_async` | Async sockets built on `r0rz`                | Unix, with Tokio or async-io |
+| Package                         | Rust import | Purpose                                      | Current platform support     |
+| ------------------------------- | ----------- | -------------------------------------------- | ---------------------------- |
+| [`r0z`](crates/r0z)             | `r0z`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows        |
+| [`r0z-sys`](crates/r0z-sys)     | `r0z_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows        |
+| [`r0z-async`](crates/r0z-async) | `r0z_async` | Async sockets built on `r0z`                 | Unix, with Tokio or async-io |
 
 The synchronous API follows the native C API closely. The async crate supports request/reply,
 publish/subscribe, dealer/router, and push/pull sockets. It provides `futures` streams and sinks
 where the socket pattern permits them.
 
 The async crate supports Tokio and `async-io` on Unix. See
-[adapter selection](crates/r0rz-async/README.md#runtime-selection) for feature flags and examples.
+[adapter selection](crates/r0z-async/README.md#runtime-selection) for feature flags and examples.
 
 ## Development
 
@@ -76,20 +75,20 @@ The renamed crates are not yet published. For development, use local paths to th
 
 ```toml
 [dependencies]
-r0rz = { path = "../rust-zmq/crates/r0rz" }
+r0z = { path = "../rust-zmq/crates/r0z" }
 # Add this dependency if you need async sockets:
-r0rz-async = { path = "../rust-zmq/crates/r0rz-async" }
+r0z-async = { path = "../rust-zmq/crates/r0z-async" }
 ```
 
-Adjust these paths for your project. Applications normally need no direct dependency on `r0rz-sys`.
+Adjust these paths for your project. Applications normally need no direct dependency on `r0z-sys`.
 
 This example sends a message between two sockets in one process:
 
 ```rust
-fn main() -> r0rz::Result<()> {
-    let context = r0rz::Context::new();
-    let sender = context.socket(r0rz::PAIR)?;
-    let receiver = context.socket(r0rz::PAIR)?;
+fn main() -> r0z::Result<()> {
+    let context = r0z::Context::new();
+    let sender = context.socket(r0z::PAIR)?;
+    let receiver = context.socket(r0z::PAIR)?;
     sender.set_linger(0)?;
     receiver.set_linger(0)?;
 
@@ -101,35 +100,34 @@ fn main() -> r0rz::Result<()> {
 }
 ```
 
-See the [synchronous examples](crates/r0rz/examples) and
-[async examples](crates/r0rz-async/examples) for more socket patterns. To generate API
-documentation, run:
+See the [synchronous examples](crates/r0z/examples) and [async examples](crates/r0z-async/examples)
+for more socket patterns. To generate API documentation, run:
 
 ```sh
 cargo doc --workspace --no-deps --open
 ```
 
-On Windows, add `--exclude r0rz-async`.
+On Windows, add `--exclude r0z-async`.
 
 ## Migrate from `zmq` and `tmq`
 
 Replace the Cargo dependencies and Rust imports:
 
-| Previous package | New package  | Import change              |
-| ---------------- | ------------ | -------------------------- |
-| `zmq`            | `r0rz`       | `zmq::` → `r0rz::`         |
-| `zmq-sys`        | `r0rz-sys`   | `zmq_sys::` → `r0rz_sys::` |
-| `tmq`            | `r0rz-async` | `tmq::` → `r0rz_async::`   |
+| Previous package | New package | Import change             |
+| ---------------- | ----------- | ------------------------- |
+| `zmq`            | `r0z`       | `zmq::` → `r0z::`         |
+| `zmq-sys`        | `r0z-sys`   | `zmq_sys::` → `r0z_sys::` |
+| `tmq`            | `r0z-async` | `tmq::` → `r0z_async::`   |
 
 `TmqError` and `AsZmqSocket` retain their names. Request/reply sockets now use `RequestReply` with
 borrowing operations. See the
-[async migration guide](crates/r0rz-async/README.md#requestreply-ownership-and-migration). To reduce
+[async migration guide](crates/r0z-async/README.md#requestreply-ownership-and-migration). To reduce
 import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]
-zmq = { package = "r0rz", path = "../rust-zmq/crates/r0rz" }
-tmq = { package = "r0rz-async", path = "../rust-zmq/crates/r0rz-async" }
+zmq = { package = "r0z", path = "../rust-zmq/crates/r0z" }
+tmq = { package = "r0z-async", path = "../rust-zmq/crates/r0z-async" }
 ```
 
 Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages. The new
@@ -152,7 +150,7 @@ cargo test --workspace --doc
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-On Windows, add `--exclude r0rz-async` to each command. See [HACKING.md](HACKING.md) for more
+On Windows, add `--exclude r0z-async` to each command. See [HACKING.md](HACKING.md) for more
 commands, including the separate fuzz and consumer projects.
 
 ## Native behavior to account for
@@ -176,7 +174,7 @@ Original authors and the existing Rust binding license terms are retained.
 Both upstream Rust projects declare **MIT OR Apache-2.0**, which permits this combined workspace
 under the same terms. You may choose either license for the Rust bindings. See
 [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE), and the
-[async license notices](crates/r0rz-async/UPSTREAM.md).
+[async license notices](crates/r0z-async/UPSTREAM.md).
 
 Native dependencies retain their own licenses: `libzmq` uses MPL-2.0, and libsodium uses ISC. These
 can be combined with the Rust bindings, subject to their notice and source distribution

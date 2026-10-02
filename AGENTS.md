@@ -6,15 +6,15 @@ build commands. [PROVENANCE.md](./PROVENANCE.md) records upstream sources and li
 
 ## Project shape
 
-r0rz provides Rust bindings to native ZeroMQ (`libzmq`). It is not a ZeroMQ implementation written
+r0z provides Rust bindings to native ZeroMQ (`libzmq`). It is not a ZeroMQ implementation written
 from scratch in Rust. The synchronous and FFI crates descend from `rust-zmq`. The async crate
 descends from `tmq`.
 
 ```text
 crates/
-├── r0rz/        # safe synchronous bindings, examples, and tests
-├── r0rz-sys/    # native library build and unsafe FFI bindings
-└── r0rz-async/  # async sockets built on r0rz, Tokio and async-io adapters on Unix
+├── r0z/         # safe synchronous bindings, examples, and tests
+├── r0z-sys/     # native library build and unsafe FFI bindings
+└── r0z-async/   # async sockets built on r0z, Tokio and async-io adapters on Unix
 fuzz/           # separate Cargo workspace with cargo-fuzz targets
 msrv-test/      # separate Cargo workspace with a minimal consumer
 ```
@@ -101,7 +101,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 Replace the dprint file arguments with the documentation and configuration files changed by the
 task. Use `dprint fmt <files>` to format them.
 
-On Windows, add `--exclude r0rz-async` to workspace test and Clippy commands. The async crate
+On Windows, add `--exclude r0z-async` to workspace test and Clippy commands. The async crate
 currently requires Unix. Use `cargo test -p <package>` for focused tests.
 
 When dependency names or workspace paths change, also check the standalone consumers:

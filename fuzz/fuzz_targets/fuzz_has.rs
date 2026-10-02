@@ -4,6 +4,6 @@ use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(capability) = std::str::from_utf8(data) {
-        let _ = r0rz::has(capability);
+        let _ = r0z::has(capability);
     }
 });

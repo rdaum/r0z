@@ -1,6 +1,6 @@
-# Contributing to r0rz
+# Contributing to r0z
 
-Thank you for your interest in contributing to r0rz!
+Thank you for your interest in contributing to r0z!
 
 ## Bug reports
 
@@ -10,7 +10,7 @@ https://gist.github.com/ if your examples run long.
 ## Feature requests
 
 If you find a missing feature, such as functionality provided by the underlying `libzmq` library,
-but not available via the Rust API provided by the `r0rz` crate, or a suggestion to improve the
+but not available via the Rust API provided by the `r0z` crate, or a suggestion to improve the
 existing API to make it more ergonomic, please file an issue before starting to work on a pull
 request, especially when the feature requires API changes or adds to the existing API in non-trivial
 ways.
@@ -21,7 +21,7 @@ feature.
 
 ## Pull requests
 
-r0rz uses the "fork and pull" model
+r0z uses the "fork and pull" model
 [described here](https://help.github.com/en/articles/about-collaborative-development-models). It is
 highly recommended that you create a dedicated branch in your repository for each pull request you
 submit, instead of submitting using your `master` branch. This will make it easier on you when you
@@ -30,7 +30,7 @@ fork's `master` branch (see below).
 
 ### Version history
 
-The r0rz project aims to keep the version history useful and reasonably simple. Thus, when preparing
+The r0z project aims to keep the version history useful and reasonably simple. Thus, when preparing
 and updating your pull request, you should make liberal use of git's history rewriting capabilities,
 such as amending and squashing commits. Try to observe the following guidelines:
 

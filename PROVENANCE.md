@@ -5,7 +5,7 @@ review below covers the two imported Rust projects and their main native depende
 
 ## Synchronous and FFI bindings
 
-`crates/r0rz` and `crates/r0rz-sys` come from [erickt/rust-zmq](https://github.com/erickt/rust-zmq).
+`crates/r0z` and `crates/r0z-sys` come from [erickt/rust-zmq](https://github.com/erickt/rust-zmq).
 The fork includes upstream commit
 [`5d78967001abb1aece2fba878d6151cb66cd1767`](https://github.com/erickt/rust-zmq/commit/5d78967001abb1aece2fba878d6151cb66cd1767),
 dated May 30, 2025. The package versions at that source were `zmq` 0.10.0 and `zmq-sys` 0.12.0.
@@ -22,8 +22,8 @@ package names, and documentation. See [NEWS.md](NEWS.md) and Git history for ind
 
 ## Async bindings
 
-`crates/r0rz-async` comes from [cetra3/tmq](https://github.com/cetra3/tmq), version 0.5.0. The
-import uses commit
+`crates/r0z-async` comes from [cetra3/tmq](https://github.com/cetra3/tmq), version 0.5.0. The import
+uses commit
 [`538cce9b0fed9dd90a4bb3bcf28eb54e1f94973b`](https://github.com/cetra3/tmq/commit/538cce9b0fed9dd90a4bb3bcf28eb54e1f94973b).
 The upstream
 [manifest](https://github.com/cetra3/tmq/blob/538cce9b0fed9dd90a4bb3bcf28eb54e1f94973b/Cargo.toml)
@@ -31,7 +31,7 @@ declares `MIT/Apache-2.0` too. The imported source therefore has compatible lice
 workspace.
 
 The manifest retains all five upstream author entries. The import includes source, tests, examples,
-and a benchmark. See [the crate's origin record](crates/r0rz-async/UPSTREAM.md) for authors, license
+and a benchmark. See [the crate's origin record](crates/r0z-async/UPSTREAM.md) for authors, license
 text details, and changes made here.
 
 ## Native libraries

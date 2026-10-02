@@ -1,4 +1,4 @@
-# Unreleased (r0rz workspace, 2026-10-02)
+# Unreleased (r0z workspace, 2026-10-02)
 
 - Replaced consuming request/reply wrappers with `RequestReply` and borrowing operations. Update
   stored types and send/receive calls as described in the async migration guide.
@@ -15,8 +15,8 @@
 - Updated direct dependency requirements to their latest stable releases as of October 2, 2026.
 - Migrated examples and test helpers to rand 0.10 and updated criterion to 0.8 and thiserror to 2.
 
-- Renamed `zmq` to `r0rz` and `zmq-sys` to `r0rz-sys`.
-- Imported `tmq` 0.5.0 as `r0rz-async` in the same Cargo workspace.
+- Renamed `zmq` to `r0z` and `zmq-sys` to `r0z-sys`.
+- Imported `tmq` 0.5.0 as `r0z-async` in the same Cargo workspace.
 - Updated imports, examples, tests, CI, and standalone consumer paths.
 - Recorded upstream source commits, authors, and license terms.
 - Rewrote the README to explain the fork, native dependencies, and migration.

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/r0rz", "crates/r0rz-async", "crates/r0rz-sys"]
+members = ["crates/r0z", "crates/r0z-async", "crates/r0z-sys"]
 exclude = ["fuzz", "msrv-test"]
 
 [workspace.package]
@@ -20,8 +20,8 @@ log = "0.4.34"
 nix = { version = "0.31.3", features = ["poll"] }
 pretty_env_logger = "0.5.0"
 quickcheck = "1.1.0"
-r0rz = { version = "0.10.0", path = "crates/r0rz" }
-r0rz-sys = { version = "0.13.0", path = "crates/r0rz-sys", features = ["libsodium"] }
+r0z = { version = "0.10.0", path = "crates/r0z" }
+r0z-sys = { version = "0.13.0", path = "crates/r0z-sys", features = ["libsodium"] }
 rand = "0.10.3"
 tempfile = "3.27.0"
 thiserror = "2.0.21"
