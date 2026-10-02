@@ -51,7 +51,11 @@ impl Message {
     fn checked_msg_len(len: usize) -> size_t {
         // Passing absurdly large sizes straight into libzmq can trigger hard
         // allocator aborts in sanitizer builds; fail fast in Rust instead.
-        assert!(len <= isize::MAX as usize, "message size too large: {}", len);
+        assert!(
+            len <= isize::MAX as usize,
+            "message size too large: {}",
+            len
+        );
         len as size_t
     }
 

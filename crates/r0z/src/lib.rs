@@ -467,7 +467,9 @@ impl Context {
 
     /// Set the maximum number of sockets allowed on the context.
     pub fn set_max_sockets(&self, value: i32) -> Result<()> {
-        zmq_try!(unsafe { r0z_sys::zmq_ctx_set(self.raw.ctx, r0z_sys::ZMQ_MAX_SOCKETS as _, value) });
+        zmq_try!(unsafe {
+            r0z_sys::zmq_ctx_set(self.raw.ctx, r0z_sys::ZMQ_MAX_SOCKETS as _, value)
+        });
         Ok(())
     }
 
