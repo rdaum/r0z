@@ -1,5 +1,9 @@
 # Unreleased (r0z workspace, 2026-10-02)
 
+- Fixed a use-after-free after `Context::destroy()`. Context clones now share termination state, and
+  final cleanup does not terminate freed memory again. Context methods return `ETERM` after
+  termination starts. Repeated `destroy()` calls after successful termination are no-ops.
+
 - Expanded DEALER/REP tests to cover both bind directions over IPC and TCP, with unsplit and split
   sockets. Added split socket checks for backpressure, task cancellation, resumed operations, and
   idle polling under both runtime adapters.

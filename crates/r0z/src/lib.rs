@@ -28,7 +28,7 @@ use std::os::windows::io::{AsRawSocket, AsSocket, BorrowedSocket, RawSocket};
 use std::ptr;
 use std::result;
 use std::string::FromUtf8Error;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use r0z_sys::{errno, RawFd};
 
@@ -386,16 +386,58 @@ pub fn version() -> (i32, i32, i32) {
 }
 
 struct RawContext {
-    ctx: *mut c_void,
+    state: Mutex<ContextState>,
+}
+
+enum ContextState {
+    Active(*mut c_void),
+    Terminating,
+    Interrupted(*mut c_void),
+    Terminated,
 }
 
 impl RawContext {
+    fn with_context<T>(&self, operation: impl FnOnce(*mut c_void) -> Result<T>) -> Result<T> {
+        let state = self.state.lock().unwrap();
+        match *state {
+            // Hold the lock so termination cannot free the context during this call.
+            ContextState::Active(ctx) => operation(ctx),
+            _ => Err(Error::ETERM),
+        }
+    }
+
     fn term(&self) -> Result<()> {
-        zmq_try!(unsafe { r0z_sys::zmq_ctx_term(self.ctx) });
-        Ok(())
+        let ctx = {
+            let mut state = self.state.lock().unwrap();
+            let ctx = match *state {
+                ContextState::Active(ctx) | ContextState::Interrupted(ctx) => ctx,
+                ContextState::Terminating => return Err(Error::ETERM),
+                ContextState::Terminated => return Ok(()),
+            };
+            *state = ContextState::Terminating;
+            ctx
+        };
+        // SAFETY: this call has exclusive ownership of termination. Other context methods
+        // now return ETERM. Native sockets remain valid until closed, and ctx_term waits
+        // for them. Do not hold the mutex during that wait: their owners may use Context.
+        let result = if unsafe { r0z_sys::zmq_ctx_term(ctx) } == -1 {
+            Err(errno_to_error())
+        } else {
+            Ok(())
+        };
+        *self.state.lock().unwrap() = if result == Err(Error::EINTR) {
+            // EINTR leaves the native context alive so termination can be retried.
+            ContextState::Interrupted(ctx)
+        } else {
+            ContextState::Terminated
+        };
+        result
     }
 }
 
+// SAFETY: libzmq contexts support access from multiple threads. The mutex serializes
+// context calls and prevents access after termination starts. Sockets retain an Arc
+// and libzmq waits for their closure before freeing the native context.
 unsafe impl Send for RawContext {}
 unsafe impl Sync for RawContext {}
 
@@ -438,39 +480,41 @@ impl Context {
     pub fn new() -> Context {
         Context {
             raw: Arc::new(RawContext {
-                ctx: unsafe { r0z_sys::zmq_ctx_new() },
+                state: Mutex::new(ContextState::Active(unsafe { r0z_sys::zmq_ctx_new() })),
             }),
         }
     }
 
     /// Get the size of the ØMQ thread pool to handle I/O operations.
     pub fn get_io_threads(&self) -> Result<i32> {
-        let rc =
-            zmq_try!(unsafe { r0z_sys::zmq_ctx_get(self.raw.ctx, r0z_sys::ZMQ_IO_THREADS as _) });
-        Ok(rc as i32)
+        self.raw.with_context(|ctx| {
+            let rc = zmq_try!(unsafe { r0z_sys::zmq_ctx_get(ctx, r0z_sys::ZMQ_IO_THREADS as _) });
+            Ok(rc as i32)
+        })
     }
 
     /// Set the size of the ØMQ thread pool to handle I/O operations.
     pub fn set_io_threads(&self, value: i32) -> Result<()> {
-        zmq_try!(unsafe {
-            r0z_sys::zmq_ctx_set(self.raw.ctx, r0z_sys::ZMQ_IO_THREADS as _, value)
-        });
-        Ok(())
+        self.raw.with_context(|ctx| {
+            zmq_try!(unsafe { r0z_sys::zmq_ctx_set(ctx, r0z_sys::ZMQ_IO_THREADS as _, value) });
+            Ok(())
+        })
     }
 
     /// Get the maximum number of sockets allowed on the context.
     pub fn get_max_sockets(&self) -> Result<i32> {
-        let rc =
-            zmq_try!(unsafe { r0z_sys::zmq_ctx_get(self.raw.ctx, r0z_sys::ZMQ_MAX_SOCKETS as _) });
-        Ok(rc as i32)
+        self.raw.with_context(|ctx| {
+            let rc = zmq_try!(unsafe { r0z_sys::zmq_ctx_get(ctx, r0z_sys::ZMQ_MAX_SOCKETS as _) });
+            Ok(rc as i32)
+        })
     }
 
     /// Set the maximum number of sockets allowed on the context.
     pub fn set_max_sockets(&self, value: i32) -> Result<()> {
-        zmq_try!(unsafe {
-            r0z_sys::zmq_ctx_set(self.raw.ctx, r0z_sys::ZMQ_MAX_SOCKETS as _, value)
-        });
-        Ok(())
+        self.raw.with_context(|ctx| {
+            zmq_try!(unsafe { r0z_sys::zmq_ctx_set(ctx, r0z_sys::ZMQ_MAX_SOCKETS as _, value) });
+            Ok(())
+        })
     }
 
     /// Create a new socket.
@@ -479,20 +523,27 @@ impl Context {
     /// the context it was created from, and will keep that context
     /// from being dropped while being live.
     pub fn socket(&self, socket_type: SocketType) -> Result<Socket> {
-        let sock = unsafe { r0z_sys::zmq_socket(self.raw.ctx, socket_type.to_raw()) };
+        self.raw.with_context(|ctx| {
+            let sock = unsafe { r0z_sys::zmq_socket(ctx, socket_type.to_raw()) };
 
-        if sock.is_null() {
-            return Err(errno_to_error());
-        }
+            if sock.is_null() {
+                return Err(errno_to_error());
+            }
 
-        Ok(Socket {
-            sock,
-            context: Some(self.clone()),
+            Ok(Socket {
+                sock,
+                context: Some(self.clone()),
+            })
         })
     }
 
     /// Try to destroy the context. This is different than the destructor; the
     /// destructor will loop when zmq_ctx_term returns EINTR.
+    ///
+    /// Termination affects all clones and waits for all sockets to close. Once it starts,
+    /// context options and socket creation return `ETERM`. A concurrent `destroy` also
+    /// returns `ETERM`. After successful termination, repeated `destroy` calls are no-ops.
+    /// If interrupted with `EINTR`, call `destroy` again to resume termination.
     pub fn destroy(&mut self) -> Result<()> {
         self.raw.term()
     }
