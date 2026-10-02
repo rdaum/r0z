@@ -1,9 +1,12 @@
 #![deny(missing_docs)]
 
-//! # r0rz-async: native ZeroMQ bindings for Tokio
+//! # r0rz-async: native ZeroMQ bindings with runtime adapters
 //!
-//! This crate wraps `r0rz` and native `libzmq`. It currently requires Tokio and Unix.
-//! It is derived from `tmq`; runtime portability is planned.
+//! This crate wraps `r0rz` and native `libzmq`. It is derived from `tmq`.
+//! The built-in adapters support Tokio (the default) and `async-io` on Unix.
+//! Disable default features and enable `async-io` to build without Tokio.
+//! Select an adapter per socket with [`SocketBuilder::with_runtime`]; see [`runtime`].
+//! With neither feature, applications must supply their own [`runtime::Runtime`].
 //!
 //! ## Currently Implemented Sockets
 //!
@@ -20,6 +23,8 @@
 //! To publish messages to all connected subscribers, you can use the `publish` function:
 //!
 //! ```rust,no_run
+//! # #[cfg(feature = "tokio")]
+//! # mod example {
 //! use r0rz_async::{publish, Context, Result};
 //!
 //! use futures::SinkExt;
@@ -45,6 +50,8 @@
 //!         sleep(Duration::from_secs(1)).await;
 //!     }
 //! }
+//! # }
+//! # fn main() {}
 //! ```
 
 /// Shortcut for [`Result<T, r0rz_async::TmqError>`].
@@ -69,6 +76,7 @@ mod comm;
 mod error;
 mod message;
 mod poll;
+pub mod runtime;
 mod socket;
 mod socket_builder;
 mod socket_types;

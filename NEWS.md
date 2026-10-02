@@ -1,5 +1,12 @@
 # Unreleased (r0rz workspace, 2026-10-02)
 
+- Added optional Tokio and async-io runtime adapters with per-socket selection.
+- Shared the ZeroMQ readiness and multipart logic across adapters, including separate send and
+  receive wakeups.
+- Added shared socket tests for both adapters, including readiness, cancellation, and backpressure
+  regressions.
+- Added a build without Tokio, an async-io example, and a CI matrix for adapter features.
+
 - Updated direct dependency requirements to their latest stable releases as of October 2, 2026.
 - Migrated examples and test helpers to rand 0.10 and updated criterion to 0.8 and thiserror to 2.
 
@@ -8,7 +15,7 @@
 - Updated imports, examples, tests, CI, and standalone consumer paths.
 - Recorded upstream source commits, authors, and license terms.
 - Rewrote the README to explain the fork, native dependencies, and migration.
-- The async implementation still requires Tokio and Unix. Runtime portability remains planned.
+- The initial async import retained the Tokio and Unix requirements of tmq.
 
 The entries below retain historical package names and describe earlier fork policy.
 

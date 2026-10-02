@@ -7,6 +7,8 @@ use crate::{poll::ZmqPoller, socket::AsZmqSocket, FromZmqSocket, Receiver, Socke
 /// ## Usage Example
 ///
 /// ```rust,no_run
+/// # #[cfg(feature = "tokio")]
+/// # mod example {
 /// use futures::StreamExt;
 ///
 /// use r0rz_async::{subscribe, Context, Result};
@@ -28,6 +30,8 @@ use crate::{poll::ZmqPoller, socket::AsZmqSocket, FromZmqSocket, Receiver, Socke
 ///     }
 ///     Ok(())
 /// }
+/// # }
+/// # fn main() {}
 /// ```
 pub fn subscribe(context: &ZmqContext) -> SocketBuilder<SubscribeWithoutTopic> {
     SocketBuilder::new(context, r0rz::SocketType::SUB)
@@ -36,11 +40,15 @@ pub fn subscribe(context: &ZmqContext) -> SocketBuilder<SubscribeWithoutTopic> {
 /// SUB socket which is already bound or connected, but isn't yet subscribed to a topic.
 pub struct SubscribeWithoutTopic {
     socket: r0rz::Socket,
+    register: crate::runtime::Register,
 }
 
 impl FromZmqSocket<SubscribeWithoutTopic> for SubscribeWithoutTopic {
-    fn from_zmq_socket(socket: r0rz::Socket) -> crate::Result<Self> {
-        Ok(Self { socket })
+    fn from_zmq_socket(
+        socket: r0rz::Socket,
+        register: crate::runtime::Register,
+    ) -> crate::Result<Self> {
+        Ok(Self { socket, register })
     }
 }
 
@@ -49,7 +57,7 @@ impl SubscribeWithoutTopic {
     pub fn subscribe(self, topic: &[u8]) -> crate::Result<Subscribe> {
         self.socket.set_subscribe(topic)?;
         Ok(Subscribe {
-            inner: Receiver::new(ZmqPoller::from_zmq_socket(self.socket)?),
+            inner: Receiver::new(ZmqPoller::from_zmq_socket(self.socket, self.register)?),
         })
     }
 }

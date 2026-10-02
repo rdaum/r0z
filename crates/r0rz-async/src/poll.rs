@@ -1,29 +1,64 @@
 use futures::ready;
 
 use crate::error::TmqError::InterruptedSend;
-use crate::socket::{AsZmqSocket, SocketWrapper};
+use crate::runtime::{Register, Registration};
+use crate::socket::AsZmqSocket;
 use crate::{Multipart, Result};
+use futures::task::{waker_ref, ArcWake, AtomicWaker};
 use r0rz::Socket;
+use std::sync::Arc;
 use std::{
     collections::VecDeque,
     task::{Context, Poll},
 };
-use tokio::io::unix::AsyncFd;
 
 /// Implements functions for asynchronous reading and writing of multipart messages.
-pub(crate) struct ZmqPoller(AsyncFd<SocketWrapper>);
+pub(crate) struct ZmqPoller {
+    registration: Box<dyn Registration>,
+    waiters: Arc<Waiters>,
+}
+
+#[derive(Default)]
+struct Waiters {
+    read: AtomicWaker,
+    write: AtomicWaker,
+}
+
+impl ArcWake for Waiters {
+    fn wake_by_ref(arc_self: &Arc<Self>) {
+        arc_self.read.wake();
+        arc_self.write.wake();
+    }
+}
 
 impl ZmqPoller {
-    #[inline]
-    pub(crate) fn from_zmq_socket(socket: r0rz::Socket) -> Result<Self> {
-        Ok(Self(AsyncFd::new(SocketWrapper::new(socket)?)?))
+    pub(crate) fn from_zmq_socket(socket: r0rz::Socket, register: Register) -> Result<Self> {
+        Ok(Self {
+            registration: register(socket)?,
+            waiters: Arc::default(),
+        })
+    }
+
+    // Native I/O can change the opposite direction without another descriptor edge.
+    fn after_io(&self, direction: r0rz::PollEvents) -> Result<()> {
+        let events = self.get_socket().get_events()?;
+        self.wake_opposite(events, direction);
+        Ok(())
+    }
+
+    fn wake_opposite(&self, events: r0rz::PollEvents, direction: r0rz::PollEvents) {
+        if direction == r0rz::POLLOUT && events.contains(r0rz::POLLIN) {
+            self.waiters.read.wake();
+        }
+        if direction == r0rz::POLLIN && events.contains(r0rz::POLLOUT) {
+            self.waiters.write.wake();
+        }
     }
 }
 
 impl AsZmqSocket for ZmqPoller {
-    #[inline]
     fn get_socket(&self) -> &Socket {
-        &self.0.get_ref().socket
+        self.registration.socket()
     }
 }
 
@@ -45,7 +80,9 @@ impl ZmqPoller {
             let mut buffer = Multipart::default();
             loop {
                 let mut msg = r0rz::Message::new();
-                match self.get_socket().recv(&mut msg, r0rz::DONTWAIT) {
+                let result = self.get_socket().recv(&mut msg, r0rz::DONTWAIT);
+                self.after_io(r0rz::POLLIN)?;
+                match result {
                     Ok(_) => {
                         let more = msg.get_more();
                         buffer.push_back(msg);
@@ -62,7 +99,7 @@ impl ZmqPoller {
                         if !buffer.is_empty() {
                             read_buffer.push_back(buffer);
                         }
-                        self.clear_read_ready(cx)?;
+                        self.rearm(cx, r0rz::POLLIN)?;
 
                         if read_buffer.is_empty() {
                             break Poll::Pending;
@@ -91,7 +128,9 @@ impl ZmqPoller {
         let mut buffer = Multipart::default();
         loop {
             let mut msg = r0rz::Message::new();
-            match self.get_socket().recv(&mut msg, r0rz::DONTWAIT) {
+            let result = self.get_socket().recv(&mut msg, r0rz::DONTWAIT);
+            self.after_io(r0rz::POLLIN)?;
+            match result {
                 Ok(_) => {
                     let more = msg.get_more();
                     buffer.push_back(msg);
@@ -102,7 +141,7 @@ impl ZmqPoller {
                 Err(r0rz::Error::EAGAIN) => {
                     assert!(buffer.is_empty());
                     log::warn!("EAGAIN during first message read");
-                    self.clear_read_ready(cx)?;
+                    self.rearm(cx, r0rz::POLLIN)?;
                     return Poll::Pending;
                 }
                 Err(e) => return Poll::Ready(Err(e.into())),
@@ -128,7 +167,9 @@ impl ZmqPoller {
                 flags |= r0rz::SNDMORE;
             }
 
-            match self.get_socket().send(&*msg, flags) {
+            let result = self.get_socket().send(&*msg, flags);
+            self.after_io(r0rz::POLLOUT)?;
+            match result {
                 Ok(_) => {}
                 Err(r0rz::Error::EAGAIN) => {
                     buffer.push_front(msg);
@@ -156,7 +197,13 @@ impl ZmqPoller {
     ) -> Poll<Result<()>> {
         while !buffer.is_empty() {
             ready!(self.multipart_poll_write_ready(cx))?;
-            ready!(self.multipart_send(buffer))?;
+            match self.multipart_send(buffer) {
+                Poll::Ready(result) => result?,
+                Poll::Pending => {
+                    self.rearm(cx, r0rz::POLLOUT)?;
+                    return Poll::Pending;
+                }
+            }
         }
 
         assert!(buffer.is_empty());
@@ -176,18 +223,37 @@ impl ZmqPoller {
     }
 
     fn multipart_poll(&self, cx: &mut Context<'_>, event: r0rz::PollEvents) -> Poll<Result<()>> {
-        let events = self.get_socket().get_events()?;
-        if events.contains(event) {
-            Poll::Ready(Ok(()))
+        let waiter = if event == r0rz::POLLIN {
+            &self.waiters.read
         } else {
-            self.clear_read_ready(cx)?;
-            Poll::Pending
+            &self.waiters.write
+        };
+        waiter.register(cx.waker());
+        let waker = waker_ref(&self.waiters);
+        let mut combined = Context::from_waker(&waker);
+
+        // Arm before querying ZMQ_EVENTS, which acknowledges native notification edges.
+        // Consume a stale runtime notification and rearm before returning Pending.
+        for _ in 0..2 {
+            let notification = self.registration.poll_readable(&mut combined)?;
+            let events = self.get_socket().get_events()?;
+            self.wake_opposite(events, event);
+            if events.contains(event) {
+                waiter.take();
+                return Poll::Ready(Ok(()));
+            }
+            if notification.is_pending() {
+                return Poll::Pending;
+            }
         }
+        // Bound work per poll if notifications keep arriving during registration.
+        cx.waker().wake_by_ref();
+        Poll::Pending
     }
 
-    fn clear_read_ready(&self, cx: &mut Context<'_>) -> Result<()> {
-        if let Poll::Ready(mut guard) = self.0.poll_read_ready(cx)? {
-            guard.clear_ready();
+    fn rearm(&self, cx: &mut Context<'_>, event: r0rz::PollEvents) -> Result<()> {
+        if let Poll::Ready(result) = self.multipart_poll(cx, event) {
+            result?;
             cx.waker().wake_by_ref();
         }
         Ok(())

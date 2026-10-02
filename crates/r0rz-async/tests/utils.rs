@@ -1,6 +1,7 @@
 #![allow(dead_code)]
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
-use std::thread::{spawn, JoinHandle};
+use std::thread::{spawn as thread_spawn, JoinHandle};
 
 use futures::{Sink, SinkExt, Stream};
 use r0rz::{Context, SocketType};
@@ -16,7 +17,7 @@ pub fn sync_send_multiparts<T: Into<r0rz::Message> + Send + 'static>(
     socket_type: SocketType,
     multipart: Vec<Vec<T>>,
 ) -> JoinHandle<()> {
-    spawn(move || {
+    thread_spawn(move || {
         let socket = Context::new().socket(socket_type).unwrap();
         socket.connect(&address).unwrap();
 
@@ -33,7 +34,7 @@ pub fn sync_send_multipart_repeated<T: Into<r0rz::Message> + Clone + 'static + S
     multipart: Vec<T>,
     count: u64,
 ) -> JoinHandle<()> {
-    spawn(move || {
+    thread_spawn(move || {
         let socket = Context::new().socket(socket_type).unwrap();
         socket.connect(&address).unwrap();
 
@@ -51,7 +52,7 @@ pub fn sync_receive_multiparts<T: Into<r0rz::Message> + Send + 'static>(
     socket_type: SocketType,
     expected: Vec<Vec<T>>,
 ) -> JoinHandle<()> {
-    spawn(move || {
+    thread_spawn(move || {
         let socket = Context::new().socket(socket_type).unwrap();
         socket.bind(&address).unwrap();
 
@@ -75,7 +76,7 @@ pub fn sync_receive_multipart_repeated<T: Into<r0rz::Message> + Send + 'static>(
     multipart: Vec<T>,
     count: u64,
 ) -> JoinHandle<()> {
-    spawn(move || {
+    thread_spawn(move || {
         let socket = Context::new().socket(socket_type).unwrap();
         socket.bind(&address).unwrap();
 
@@ -100,7 +101,7 @@ pub fn sync_receive_subscribe<T: Into<r0rz::Message> + Send + 'static>(
     let barrier = Arc::new(Barrier::new(2));
     let handle = barrier.clone();
     (
-        spawn(move || {
+        thread_spawn(move || {
             let socket = Context::new().socket(r0rz::SocketType::SUB).unwrap();
             socket.connect(&address).unwrap();
             socket.set_subscribe(topic.as_bytes()).unwrap();
@@ -123,7 +124,7 @@ pub fn sync_receive_subscribe<T: Into<r0rz::Message> + Send + 'static>(
     )
 }
 pub fn sync_echo(address: String, socket_type: SocketType, count: u64) -> JoinHandle<()> {
-    spawn(move || {
+    thread_spawn(move || {
         let socket = Context::new().socket(socket_type).unwrap();
         socket.bind(&address).unwrap();
 
@@ -231,4 +232,172 @@ pub fn generate_tcp_address() -> String {
 
 pub fn msg(bytes: &[u8]) -> r0rz::Message {
     r0rz::Message::from(bytes)
+}
+
+#[derive(Clone, Copy)]
+enum Adapter {
+    #[cfg(feature = "tokio")]
+    Tokio,
+    #[cfg(feature = "async-io")]
+    AsyncIo,
+}
+
+thread_local! {
+    static ADAPTER: std::cell::Cell<Option<Adapter>> = const { std::cell::Cell::new(None) };
+    #[cfg(feature = "async-io")]
+    static EXECUTOR: async_executor::Executor<'static> = const { async_executor::Executor::new() };
+}
+
+// An OS-thread deadline also covers blocking native calls and socket/context teardown.
+pub struct Deadline {
+    sender: std::sync::mpsc::Sender<()>,
+    thread: Option<JoinHandle<()>>,
+}
+impl Deadline {
+    pub fn start() -> Self {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let thread = thread_spawn(move || {
+            if receiver.recv_timeout(std::time::Duration::from_secs(60))
+                == Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+            {
+                eprintln!("async socket test exceeded its 60 second process deadline");
+                std::process::abort();
+            }
+        });
+        Self {
+            sender,
+            thread: Some(thread),
+        }
+    }
+}
+impl Drop for Deadline {
+    fn drop(&mut self) {
+        let _ = self.sender.send(());
+        self.thread.take().unwrap().join().unwrap();
+    }
+}
+
+pub fn run<F, Fut>(test: F) -> Result<()>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = Result<()>>,
+{
+    let _deadline = Deadline::start();
+    #[cfg(feature = "tokio")]
+    {
+        ADAPTER.set(Some(Adapter::Tokio));
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(test())?;
+    }
+    #[cfg(feature = "async-io")]
+    {
+        ADAPTER.set(Some(Adapter::AsyncIo));
+        EXECUTOR.with(|executor| async_io::block_on(executor.run(test())))?;
+    }
+    ADAPTER.set(None);
+    Ok(())
+}
+
+fn select<T>(builder: r0rz_async::SocketBuilder<T>) -> r0rz_async::SocketBuilder<T>
+where
+    T: r0rz_async::FromZmqSocket<T>,
+{
+    match ADAPTER.get().expect("test runtime is active") {
+        #[cfg(feature = "tokio")]
+        Adapter::Tokio => builder.with_runtime::<r0rz_async::runtime::Tokio>(),
+        #[cfg(feature = "async-io")]
+        Adapter::AsyncIo => builder.with_runtime::<r0rz_async::runtime::AsyncIo>(),
+    }
+}
+
+#[derive(Debug)]
+pub struct Elapsed;
+
+pub async fn timeout<F: std::future::Future>(
+    duration: std::time::Duration,
+    future: F,
+) -> std::result::Result<F::Output, Elapsed> {
+    let timer = async {
+        match ADAPTER.get().unwrap() {
+            #[cfg(feature = "tokio")]
+            Adapter::Tokio => tokio::time::sleep(duration).await,
+            #[cfg(feature = "async-io")]
+            Adapter::AsyncIo => {
+                async_io::Timer::after(duration).await;
+            }
+        }
+    };
+    futures::pin_mut!(future, timer);
+    match futures::future::select(future, timer).await {
+        futures::future::Either::Left((output, _)) => Ok(output),
+        futures::future::Either::Right(_) => Err(Elapsed),
+    }
+}
+
+type Task<T> = std::pin::Pin<
+    Box<dyn std::future::Future<Output = std::result::Result<T, &'static str>> + Send>,
+>;
+
+pub fn spawn<F>(future: F) -> Task<F::Output>
+where
+    F: std::future::Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    match ADAPTER.get().unwrap() {
+        #[cfg(feature = "tokio")]
+        Adapter::Tokio => {
+            let task = tokio::spawn(future);
+            Box::pin(async move { task.await.map_err(|_| "task panicked") })
+        }
+        #[cfg(feature = "async-io")]
+        Adapter::AsyncIo => {
+            let task = EXECUTOR.with(|executor| executor.spawn(future));
+            Box::pin(async move { Ok(task.await) })
+        }
+    }
+}
+
+pub fn dealer(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::dealer::Dealer> {
+    select(r0rz_async::dealer(context))
+}
+
+pub fn pair(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::pair::Pair> {
+    select(r0rz_async::pair(context))
+}
+
+pub fn publish(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::publish::Publish> {
+    select(r0rz_async::publish(context))
+}
+
+pub fn pull(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::pull::Pull> {
+    select(r0rz_async::pull(context))
+}
+
+pub fn push(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::push::Push> {
+    select(r0rz_async::push(context))
+}
+
+pub fn reply(
+    context: &Context,
+) -> r0rz_async::SocketBuilder<r0rz_async::request_reply::RequestReceiver> {
+    select(r0rz_async::reply(context))
+}
+
+pub fn request(
+    context: &Context,
+) -> r0rz_async::SocketBuilder<r0rz_async::request_reply::RequestSender> {
+    select(r0rz_async::request(context))
+}
+
+pub fn router(context: &Context) -> r0rz_async::SocketBuilder<r0rz_async::router::Router> {
+    select(r0rz_async::router(context))
+}
+
+pub fn subscribe(
+    context: &Context,
+) -> r0rz_async::SocketBuilder<r0rz_async::subscribe::SubscribeWithoutTopic> {
+    select(r0rz_async::subscribe(context))
 }

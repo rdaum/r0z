@@ -44,18 +44,18 @@ together. The new name(s) are meant give this maintenance work its own release p
 
 ## Workspace
 
-| Package                           | Rust import  | Purpose                                      | Current platform support |
-| --------------------------------- | ------------ | -------------------------------------------- | ------------------------ |
-| [`r0rz`](crates/r0rz)             | `r0rz`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows    |
-| [`r0rz-sys`](crates/r0rz-sys)     | `r0rz_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows    |
-| [`r0rz-async`](crates/r0rz-async) | `r0rz_async` | Async sockets built on `r0rz`                | Unix, with Tokio         |
+| Package                           | Rust import  | Purpose                                      | Current platform support     |
+| --------------------------------- | ------------ | -------------------------------------------- | ---------------------------- |
+| [`r0rz`](crates/r0rz)             | `r0rz`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows        |
+| [`r0rz-sys`](crates/r0rz-sys)     | `r0rz_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows        |
+| [`r0rz-async`](crates/r0rz-async) | `r0rz_async` | Async sockets built on `r0rz`                | Unix, with Tokio or async-io |
 
 The synchronous API follows the native C API closely. The async crate supports request/reply,
 publish/subscribe, dealer/router, and push/pull sockets. It provides `futures` streams and sinks
 where the socket pattern permits them.
 
-The async crate currently requires Tokio and Unix.
-[Runtime portability](https://github.com/rdaum/rust-zmq/issues/4) is planned.
+The async crate supports Tokio and `async-io` on Unix. See
+[adapter selection](crates/r0rz-async/README.md#runtime-selection) for feature flags and examples.
 
 ## Development
 
@@ -65,10 +65,10 @@ The fork integrates upstream fixes and maintains all three crates in one workspa
 Open tickets cover
 [socket ownership and cancellation (#1)](https://github.com/rdaum/rust-zmq/issues/1),
 [receive timeouts (#2)](https://github.com/rdaum/rust-zmq/issues/2), and
-[split socket hangs (#3)](https://github.com/rdaum/rust-zmq/issues/3). Planned improvements cover
-[runtime portability (#4)](https://github.com/rdaum/rust-zmq/issues/4) and
-[message copies (#5)](https://github.com/rdaum/rust-zmq/issues/5). The tickets contain the evidence,
-proposed work, and acceptance criteria.
+[split socket hangs (#3)](https://github.com/rdaum/rust-zmq/issues/3). The
+[runtime adapter work (#4)](https://github.com/rdaum/rust-zmq/issues/4) records the portability
+requirements. [Message copies (#5)](https://github.com/rdaum/rust-zmq/issues/5) tracks further
+performance work. The tickets contain the evidence, proposed work, and acceptance criteria.
 
 ## Use the bindings
 

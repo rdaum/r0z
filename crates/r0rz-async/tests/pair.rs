@@ -1,7 +1,9 @@
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+
 use r0rz::{Context, SocketType};
 
 use futures::StreamExt;
-use r0rz_async::{pair, Result};
+use r0rz_async::Result;
 use std::{
     sync::{Arc, Barrier},
     thread::spawn,
@@ -10,80 +12,88 @@ use utils::{check_receive_multiparts, generate_tcp_address, hammer_receive, sync
 
 mod utils;
 
-#[tokio::test]
-async fn receive_single_message() -> Result<()> {
-    let address = generate_tcp_address();
-    let ctx = Context::new();
-    let sock = pair(&ctx).bind(&address)?;
-
-    let thread = sync_send_multiparts(address, SocketType::PAIR, vec![vec!["hello", "world"]]);
-
-    check_receive_multiparts(sock, vec![vec!["hello", "world"]]).await?;
-
-    thread.join().unwrap();
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn receive_multiple_messages() -> Result<()> {
-    let address = generate_tcp_address();
-    let ctx = Context::new();
-    let sock = pair(&ctx).bind(&address)?;
-
-    let thread = sync_send_multiparts(
-        address,
-        SocketType::PAIR,
-        vec![vec!["hello", "world"], vec!["second", "message"]],
-    );
-
-    check_receive_multiparts(
-        sock,
-        vec![vec!["hello", "world"], vec!["second", "message"]],
-    )
-    .await?;
-
-    thread.join().unwrap();
-
-    Ok(())
-}
-
-#[tokio::test]
-async fn receive_hammer() -> Result<()> {
-    let address = generate_tcp_address();
-    let ctx = Context::new();
-    let sock = pair(&ctx).bind(&address)?;
-    hammer_receive(sock, address, SocketType::PAIR).await
-}
-
-#[tokio::test]
-async fn receive_delayed() -> Result<()> {
-    let address = generate_tcp_address();
-    let address_recv = address.clone();
-    let barrier = Arc::new(Barrier::new(2));
-    let barrier_send = barrier.clone();
-
-    let thread = spawn(move || {
+#[test]
+fn receive_single_message() -> Result<()> {
+    utils::run(|| async {
+        let address = generate_tcp_address();
         let ctx = Context::new();
-        let socket = ctx.socket(SocketType::PAIR).unwrap();
-        socket.connect(&address).unwrap();
+        let sock = utils::pair(&ctx).bind(&address)?;
+
+        let thread = sync_send_multiparts(address, SocketType::PAIR, vec![vec!["hello", "world"]]);
+
+        check_receive_multiparts(sock, vec![vec!["hello", "world"]]).await?;
+
+        thread.join().unwrap();
+
+        Ok(())
+    })
+}
+
+#[test]
+fn receive_multiple_messages() -> Result<()> {
+    utils::run(|| async {
+        let address = generate_tcp_address();
+        let ctx = Context::new();
+        let sock = utils::pair(&ctx).bind(&address)?;
+
+        let thread = sync_send_multiparts(
+            address,
+            SocketType::PAIR,
+            vec![vec!["hello", "world"], vec!["second", "message"]],
+        );
+
+        check_receive_multiparts(
+            sock,
+            vec![vec!["hello", "world"], vec!["second", "message"]],
+        )
+        .await?;
+
+        thread.join().unwrap();
+
+        Ok(())
+    })
+}
+
+#[test]
+fn receive_hammer() -> Result<()> {
+    utils::run(|| async {
+        let address = generate_tcp_address();
+        let ctx = Context::new();
+        let sock = utils::pair(&ctx).bind(&address)?;
+        hammer_receive(sock, address, SocketType::PAIR).await
+    })
+}
+
+#[test]
+fn receive_delayed() -> Result<()> {
+    utils::run(|| async {
+        let address = generate_tcp_address();
+        let address_recv = address.clone();
+        let barrier = Arc::new(Barrier::new(2));
+        let barrier_send = barrier.clone();
+
+        let thread = spawn(move || {
+            let ctx = Context::new();
+            let socket = ctx.socket(SocketType::PAIR).unwrap();
+            socket.connect(&address).unwrap();
+            for _ in 0..3 {
+                socket.send_multipart(vec!["hello", "world"], 0).unwrap();
+            }
+
+            barrier_send.wait();
+        });
+
+        barrier.wait();
+
+        let ctx = Context::new();
+        let mut sock = utils::pair(&ctx).set_rcvhwm(1).bind(&address_recv)?;
+
         for _ in 0..3 {
-            socket.send_multipart(vec!["hello", "world"], 0).unwrap();
+            sock.next().await.unwrap()?;
         }
 
-        barrier_send.wait();
-    });
+        thread.join().unwrap();
 
-    barrier.wait();
-
-    let ctx = Context::new();
-    let mut sock = pair(&ctx).set_rcvhwm(1).bind(&address_recv)?;
-
-    for _ in 0..3 {
-        sock.next().await.unwrap()?;
-    }
-
-    thread.join().unwrap();
-
-    Ok(())
+        Ok(())
+    })
 }

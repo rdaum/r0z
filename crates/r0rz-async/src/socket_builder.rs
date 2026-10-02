@@ -33,6 +33,7 @@ macro_rules! setter {
 pub struct SocketBuilder<T> {
     socket: Option<::r0rz::Socket>,
     error: Option<TmqError>,
+    register: crate::runtime::Register,
     _phantom: std::marker::PhantomData<T>,
 }
 
@@ -55,8 +56,18 @@ where
         Self {
             socket,
             error,
+            register: crate::runtime::register_default,
             _phantom: Default::default(),
         }
+    }
+
+    /// Selects the runtime adapter used when the socket is registered.
+    ///
+    /// This choice is independent for each socket. With both built-in features enabled,
+    /// the default remains Tokio; use `with_runtime::<runtime::AsyncIo>()` to select async-io.
+    pub fn with_runtime<R: crate::runtime::Runtime>(mut self) -> Self {
+        self.register = R::register;
+        self
     }
 
     /// Connect to a ZMQ endpoint at the given address.
@@ -67,7 +78,7 @@ where
 
         let socket = self.socket.unwrap();
         socket.connect(endpoint)?;
-        T::from_zmq_socket(socket)
+        T::from_zmq_socket(socket, self.register)
     }
 
     /// Bind to a ZMQ endpoint at the given address.
@@ -78,7 +89,7 @@ where
 
         let socket = self.socket.unwrap();
         socket.bind(endpoint)?;
-        T::from_zmq_socket(socket)
+        T::from_zmq_socket(socket, self.register)
     }
 
     /// Configure the socket for [monitoring](http://api.zeromq.org/4-2:zmq-socket-monitor)

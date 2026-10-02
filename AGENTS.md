@@ -14,7 +14,7 @@ descends from `tmq`.
 crates/
 ├── r0rz/        # safe synchronous bindings, examples, and tests
 ├── r0rz-sys/    # native library build and unsafe FFI bindings
-└── r0rz-async/  # async sockets built on r0rz, currently using Tokio on Unix
+└── r0rz-async/  # async sockets built on r0rz, Tokio and async-io adapters on Unix
 fuzz/           # separate Cargo workspace with cargo-fuzz targets
 msrv-test/      # separate Cargo workspace with a minimal consumer
 ```
@@ -23,10 +23,10 @@ The workspace uses Cargo resolver version 2. Member crates use different Rust ed
 those editions unless the task includes an edition change. The `msrv-test` name alone does not
 establish a tested minimum Rust version.
 
-The native build uses `zeromq-src`. The synchronous crate enables libsodium for CURVE support.
-Runtime portability is planned for the async crate, but the current implementation requires Tokio
-and Unix. The [README](./README.md#development) links to tickets for planned work and reported
-defects.
+The native build uses `zeromq-src`. The synchronous crate enables libsodium for CURVE support. The
+async crate supports Tokio and async-io adapters on Unix. Keep ZeroMQ logic shared and runtime
+registration inside the adapters. The [README](./README.md#development) links to tickets for planned
+work and reported defects.
 
 ## Human responsibility
 

@@ -16,9 +16,12 @@ pub struct Router {
 }
 
 impl FromZmqSocket<Router> for Router {
-    fn from_zmq_socket(socket: r0rz::Socket) -> crate::Result<Self> {
+    fn from_zmq_socket(
+        socket: r0rz::Socket,
+        register: crate::runtime::Register,
+    ) -> crate::Result<Self> {
         Ok(Self {
-            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket)?),
+            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket, register)?),
         })
     }
 }

@@ -14,9 +14,12 @@ pub struct RequestSender {
 }
 
 impl FromZmqSocket<RequestSender> for RequestSender {
-    fn from_zmq_socket(socket: r0rz::Socket) -> crate::Result<Self> {
+    fn from_zmq_socket(
+        socket: r0rz::Socket,
+        register: crate::runtime::Register,
+    ) -> crate::Result<Self> {
         Ok(Self {
-            inner: ZmqPoller::from_zmq_socket(socket)?,
+            inner: ZmqPoller::from_zmq_socket(socket, register)?,
         })
     }
 }
@@ -42,9 +45,12 @@ pub struct RequestReceiver {
 }
 
 impl FromZmqSocket<RequestReceiver> for RequestReceiver {
-    fn from_zmq_socket(socket: r0rz::Socket) -> crate::Result<Self> {
+    fn from_zmq_socket(
+        socket: r0rz::Socket,
+        register: crate::runtime::Register,
+    ) -> crate::Result<Self> {
         Ok(Self {
-            inner: ZmqPoller::from_zmq_socket(socket)?,
+            inner: ZmqPoller::from_zmq_socket(socket, register)?,
         })
     }
 }

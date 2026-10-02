@@ -30,6 +30,26 @@ For a single package, use `cargo test -p r0rz`, `cargo test -p r0rz-sys`, or
 `cargo test -p r0rz-async`. The `fuzz/` harness and `msrv-test/` consumer remain outside the main
 workspace. Both depend on `crates/r0rz` through a local path.
 
+## Async runtime adapters
+
+The default workspace commands cover Tokio. Run the same async socket tests with each feature
+combination:
+
+```sh
+cargo check -p r0rz-async --no-default-features --lib
+cargo test -p r0rz-async --no-default-features --features async-io --all-targets
+cargo test -p r0rz-async --all-features --all-targets
+cargo test -p r0rz-async --no-default-features --features async-io --doc
+cargo clippy -p r0rz-async --all-features --all-targets -- -D warnings
+cargo run -p r0rz-async --no-default-features --features async-io --example async_io
+```
+
+With both features enabled, each shared integration test body runs once per adapter. The async-io
+tests use its reactor and an `async-executor` executor. The Tokio tests use its current-thread
+runtime. A watchdog thread bounds each shared test, including native shutdown, to 60 seconds. The CI
+matrix covers the core alone, each built-in adapter, and both adapters on Linux and macOS. Windows
+CI covers the synchronous and FFI crates only.
+
 ## Regenerating the C bindings
 
 The C low-level, unsafe C binding is provided by the `r0rz-sys` crate, also hosted in this

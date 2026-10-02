@@ -1,32 +1,5 @@
 use crate::Result;
 
-use std::os::unix::io::{AsRawFd, RawFd};
-
-/// Wrapper on top of a ZMQ socket.
-///
-/// The socket needs to be wrapped to allow various trait implementations.
-pub(crate) struct SocketWrapper {
-    pub(crate) socket: r0rz::Socket,
-    // This RawFd is held separately because it must be accessible
-    // without error after SocketWrapper initialization, for the AsRawFd trait.
-    fd: RawFd,
-}
-
-impl SocketWrapper {
-    pub fn new(socket: r0rz::Socket) -> Result<Self> {
-        Ok(Self {
-            fd: socket.get_fd()?,
-            socket,
-        })
-    }
-}
-
-impl AsRawFd for SocketWrapper {
-    fn as_raw_fd(&self) -> RawFd {
-        self.fd
-    }
-}
-
 /// Trait for various ZMQ socket wrappers.
 pub trait AsZmqSocket {
     /// Return a reference to the inner ZMQ socket.

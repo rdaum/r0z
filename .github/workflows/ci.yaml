@@ -53,3 +53,32 @@ jobs:
       - uses: actions/checkout@v2
       - name: Cargo clippy
         run: cargo clippy ${{ matrix.packages }} --all-targets -- -D warnings
+  async-adapters:
+    name: Async adapters
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        features: ["", "async-io", "tokio,async-io"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Check the async core and selected adapters
+        run: cargo check -p r0rz-async --no-default-features --features '${{ matrix.features }}' --lib
+      - name: Test the selected adapters
+        run: cargo test -p r0rz-async --no-default-features --features '${{ matrix.features }}' --all-targets
+      - name: Test documentation
+        run: cargo test -p r0rz-async --no-default-features --features '${{ matrix.features }}' --doc
+      - name: Lint the selected adapters
+        run: cargo clippy -p r0rz-async --no-default-features --features '${{ matrix.features }}' --all-targets -- -D warnings
+      - name: Verify the dependency graph excludes Tokio
+        if: matrix.features == '' || matrix.features == 'async-io'
+        shell: bash
+        run: |
+          cargo tree -p r0rz-async --no-default-features --features '${{ matrix.features }}' --edges normal,build --prefix none --format '{p}' > async-dependencies.txt
+          if rg '^tokio ' async-dependencies.txt; then
+            exit 1
+          fi
+      - name: Run the async-io example
+        if: matrix.features == 'async-io'
+        run: cargo run -p r0rz-async --no-default-features --features async-io --example async_io

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/r0rz", "crates/r0rz-sys", "crates/r0rz-async"]
+members = ["crates/r0rz", "crates/r0rz-async", "crates/r0rz-sys"]
 exclude = ["fuzz", "msrv-test"]
 
 [workspace.package]
@@ -8,22 +8,24 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/rdaum/rust-zmq"
 
 [workspace.dependencies]
-r0rz = { version = "0.10.0", path = "crates/r0rz" }
-r0rz-sys = { version = "0.13.0", path = "crates/r0rz-sys", features = ["libsodium"] }
+async-executor = "1.14.0"
+async-io = "2.6.0"
 bitflags = "2.13.2"
+criterion = "0.8.2"
+env_logger = { version = "0.11.11", default-features = false }
+futures = { version = "0.3.34", default-features = false, features = ["alloc"] }
 libc = "0.2.189"
 libsodium-sys-stable = "1.24.0"
-zeromq-src = "0.3.6"
-futures = { version = "0.3.34", default-features = false, features = ["alloc"] }
-tokio = { version = "1.53.1", features = ["net"] }
 log = "0.4.34"
-thiserror = "2.0.21"
-trybuild = "1.0.121"
-env_logger = { version = "0.11.11", default-features = false }
 nix = { version = "0.31.3", features = ["poll"] }
+pretty_env_logger = "0.5.0"
 quickcheck = "1.1.0"
+r0rz = { version = "0.10.0", path = "crates/r0rz" }
+r0rz-sys = { version = "0.13.0", path = "crates/r0rz-sys", features = ["libsodium"] }
 rand = "0.10.3"
 tempfile = "3.27.0"
+thiserror = "2.0.21"
 timebomb = "0.1.2"
-pretty_env_logger = "0.5.0"
-criterion = "0.8.2"
+tokio = { version = "1.53.1", features = ["net"] }
+trybuild = "1.0.121"
+zeromq-src = "0.3.6"

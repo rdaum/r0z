@@ -7,6 +7,8 @@ use crate::{poll::ZmqPoller, FromZmqSocket, Sender, SocketBuilder};
 /// ## Usage Example
 ///
 /// ```rust,no_run
+/// # #[cfg(feature = "tokio")]
+/// # mod example {
 /// use r0rz_async::{publish, Context, Result};
 ///
 /// use futures::SinkExt;
@@ -32,6 +34,8 @@ use crate::{poll::ZmqPoller, FromZmqSocket, Sender, SocketBuilder};
 ///         sleep(Duration::from_secs(1)).await;
 ///     }
 /// }
+/// # }
+/// # fn main() {}
 /// ```
 pub fn publish(context: &ZmqContext) -> SocketBuilder<Publish> {
     SocketBuilder::new(context, r0rz::SocketType::PUB)
@@ -43,9 +47,12 @@ pub struct Publish {
 }
 
 impl FromZmqSocket<Publish> for Publish {
-    fn from_zmq_socket(socket: r0rz::Socket) -> crate::Result<Self> {
+    fn from_zmq_socket(
+        socket: r0rz::Socket,
+        register: crate::runtime::Register,
+    ) -> crate::Result<Self> {
         Ok(Self {
-            inner: Sender::new(ZmqPoller::from_zmq_socket(socket)?),
+            inner: Sender::new(ZmqPoller::from_zmq_socket(socket, register)?),
         })
     }
 }
