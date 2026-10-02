@@ -159,9 +159,13 @@ Configure process environment variables before creating contexts or starting thr
 `libzmq`. Native code can read the environment while it runs. Concurrent environment changes can be
 unsafe.
 
-Sockets use infinite linger by default (`ZMQ_LINGER = -1`). Context shutdown can wait indefinitely
-for pending outbound messages. For shutdown that discards queued messages, set
-`socket.set_linger(0)`.
+Synchronous sockets use infinite linger by default (`ZMQ_LINGER = -1`). Their context shutdown can
+wait indefinitely for pending outbound messages. Set `socket.set_linger(0)` to discard queued
+messages on close.
+
+Async sockets default to zero linger. Closing them discards queued outgoing messages. Set linger
+explicitly to permit a finite or infinite wait during context shutdown. See the
+[async shutdown guide](crates/r0z-async/README.md#shutdown-and-linger).
 
 ## Source and licenses
 

@@ -50,6 +50,23 @@ runtime. A watchdog thread bounds each shared test, including native shutdown, t
 matrix covers the core alone, each built-in adapter, and both adapters on Linux and macOS. Windows
 CI covers the synchronous and FFI crates only.
 
+## Receive timeout and shutdown tests
+
+Run the isolated timeout cases with:
+
+```sh
+cargo test -p r0z-async --all-features --test timeout_shutdown -- --nocapture
+```
+
+The suite compares IPC and TCP, delivered and queued requests, and default and explicit linger
+settings. It uses Tokio timeout and `select!`, plus async-io timers. Each child process has a
+ten-second deadline. Failures include the adapter, transport, case, and last recorded phase.
+
+Cases that explicitly select infinite linger with undelivered requests must block native shutdown.
+The parent observes that phase for 200 milliseconds, then kills and reaps the child. Other cases
+must return from the receive timeout and finish shutdown. These tests also run in the normal adapter
+CI matrix. They do not establish the cause of the incomplete upstream report.
+
 ## Regenerating the C bindings
 
 The C low-level, unsafe C binding is provided by the `r0z-sys` crate, also hosted in this

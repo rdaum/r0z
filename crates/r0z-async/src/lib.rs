@@ -7,6 +7,8 @@
 //! Disable default features and enable `async-io` to build without Tokio.
 //! Select an adapter per socket with [`SocketBuilder::with_runtime`]; see [`runtime`].
 //! With neither feature, applications must supply their own [`runtime::Runtime`].
+//! Socket builders default to zero linger: closing a socket discards queued outgoing messages.
+//! Use [`SocketBuilder::set_linger`] to select a finite or infinite wait during context shutdown.
 //!
 //! ## Currently Implemented Sockets
 //!

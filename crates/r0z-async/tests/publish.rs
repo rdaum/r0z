@@ -13,7 +13,7 @@ fn send_single_message() -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
-        let sock = utils::publish(&ctx).bind(&address)?;
+        let mut sock = utils::publish(&ctx).bind(&address)?;
 
         let topic = "topic2";
         let data = vec![vec![topic, "hello", "world"]];
@@ -21,7 +21,7 @@ fn send_single_message() -> Result<()> {
 
         barrier.wait();
         std::thread::sleep(Duration::from_millis(1000)); // hack to let the subscriber prepare
-        send_multiparts(sock, data).await?;
+        send_multiparts(&mut sock, data).await?;
 
         thread.join().unwrap();
 

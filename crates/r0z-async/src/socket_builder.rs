@@ -26,6 +26,9 @@ macro_rules! setter {
 ///
 /// Use the `set_` functions to set socket options before binding/connecting
 ///
+/// Async sockets default to zero linger. Closing them discards queued outgoing messages rather
+/// than waiting for delivery during context shutdown. Use [`Self::set_linger`] to override this.
+///
 /// See ZMQ documentation for more info on what these options do: [http://api.zeromq.org/4-2:zmq-setsockopt](http://api.zeromq.org/4-2:zmq-setsockopt)
 ///
 /// [`bind`]: struct.SocketBuilder.html#method.bind
@@ -59,6 +62,7 @@ where
             register: crate::runtime::register_default,
             _phantom: Default::default(),
         }
+        .set_linger(0)
     }
 
     /// Selects the runtime adapter used when the socket is registered.
@@ -186,7 +190,13 @@ where
     setter!(set_sndbuf, i32, "Setter for the `ZMQ_SNDBUF` option.");
     setter!(set_rcvbuf, i32, "Setter for the `ZMQ_RCVBUF` option.");
     setter!(set_tos, i32, "Setter for the `ZMQ_TOS` option.");
-    setter!(set_linger, i32, "Setter for the `ZMQ_LINGER` option.");
+    setter!(
+        set_linger,
+        i32,
+        "Sets `ZMQ_LINGER` in milliseconds. Async sockets default to `0`, which discards queued
+        outgoing messages on close. Positive values permit a finite wait during context shutdown;
+        `-1` permits an indefinite wait. Either can block the thread that drops the final context."
+    );
     setter!(
         set_reconnect_ivl,
         i32,

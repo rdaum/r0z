@@ -133,7 +133,45 @@ Use the timer or selection API of your runtime. The
 [`request_timeout` example](examples/request_timeout.rs) retains the socket after a timer wins
 `tokio::select!`, then receives the delayed reply.
 
-Cancellation does not change native linger. The default linger can delay context shutdown while
-outgoing messages remain undelivered. Set linger to zero before shutdown to discard queued messages
-when this is acceptable. The [ownership ticket](https://github.com/rdaum/rust-zmq/issues/1) and
-[timeout investigation](https://github.com/rdaum/rust-zmq/issues/2) record the related work.
+## Shutdown and linger
+
+Async sockets now default to `ZMQ_LINGER = 0`. Closing a socket discards its queued outgoing
+messages. This prevents context shutdown from waiting indefinitely for those messages to reach a
+peer. The synchronous `r0z` bindings retain the native default of infinite linger.
+
+This changes the shutdown behaviour inherited from `tmq`. A successful `send()` or `flush()` means
+that ZeroMQ accepted the message, not that the peer received it. Applications that need delivery
+confirmation must use an application-level acknowledgement.
+
+To wait for queued messages during context shutdown, explicitly set linger on the builder:
+
+```rust,no_run
+# fn connect(context: &r0z_async::Context) -> r0z_async::Result<()> {
+let socket = r0z_async::request(context)
+    .set_linger(1000) // Allow up to one second for queued messages.
+    .connect("tcp://127.0.0.1:7897")?;
+# Ok(())
+# }
+```
+
+Use `-1` for infinite linger. Positive or infinite linger can block the thread that drops the final
+context reference. If the socket holds that reference, dropping the socket also shuts down the
+context. A receive timeout does not change an explicit linger setting.
+
+If you selected nonzero linger and need to abandon an exchange without waiting, set linger to zero
+before dropping the socket:
+
+```rust,no_run
+# fn abandon(socket: r0z_async::request_reply::RequestReply) -> r0z_async::Result<()> {
+use r0z_async::SocketExt;
+socket.set_linger(0)?;
+drop(socket);
+# Ok(())
+# }
+```
+
+This controls local shutdown. It does not undo requests already delivered to a peer. Configure
+linger on each socket with queued outgoing messages before dropping the final context reference. See
+the [native shutdown contract](https://libzmq.readthedocs.io/en/latest/zmq_ctx_term.html). The
+[ownership ticket](https://github.com/rdaum/rust-zmq/issues/1) and
+[timeout investigation](https://github.com/rdaum/rust-zmq/issues/2) track the related work.

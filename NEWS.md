@@ -1,5 +1,11 @@
 # Unreleased (r0z workspace, 2026-10-02)
 
+- Changed the async socket default to zero linger. Closing an async socket now discards queued
+  outgoing messages. Set linger explicitly to permit a finite or infinite wait during context
+  shutdown. Synchronous sockets retain the native default.
+- Added isolated receive-timeout and shutdown regressions for IPC and TCP under both async adapters,
+  including explicit linger overrides. Documented the shutdown behaviour and migration.
+
 - Replaced consuming request/reply wrappers with `RequestReply` and borrowing operations. Update
   stored types and send/receive calls as described in the async migration guide.
 - Added explicit request/reply state, resumable buffered sends, and cancellation and error tests

@@ -17,12 +17,12 @@ fn send_single_message() -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
-        let sock = utils::dealer(&ctx).connect(&address)?;
+        let mut sock = utils::dealer(&ctx).connect(&address)?;
 
         let data = vec![vec!["hello", "world"]];
         let thread = sync_receive_multiparts(address, SocketType::DEALER, data.clone());
 
-        send_multiparts(sock, data).await?;
+        send_multiparts(&mut sock, data).await?;
 
         thread.join().unwrap();
 
@@ -35,7 +35,7 @@ fn send_multiple_messages() -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
-        let sock = utils::dealer(&ctx).connect(&address)?;
+        let mut sock = utils::dealer(&ctx).connect(&address)?;
 
         let data = vec![
             vec!["hello", "world"],
@@ -44,7 +44,7 @@ fn send_multiple_messages() -> Result<()> {
         ];
         let thread = sync_receive_multiparts(address, SocketType::DEALER, data.clone());
 
-        send_multiparts(sock, data).await?;
+        send_multiparts(&mut sock, data).await?;
 
         thread.join().unwrap();
 
@@ -57,12 +57,12 @@ fn send_empty_message() -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
-        let sock = utils::dealer(&ctx).connect(&address)?;
+        let mut sock = utils::dealer(&ctx).connect(&address)?;
 
         let data = vec!["hello", "world"];
         let thread = sync_receive_multiparts(address, SocketType::DEALER, vec![data.clone()]);
 
-        send_multiparts(sock, vec![vec![], vec![], vec![], data]).await?;
+        send_multiparts(&mut sock, vec![vec![], vec![], vec![], data]).await?;
 
         thread.join().unwrap();
 
@@ -75,14 +75,14 @@ fn send_hammer() -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
-        let sock = utils::dealer(&ctx).connect(&address)?;
+        let mut sock = utils::dealer(&ctx).connect(&address)?;
 
         let count = 1_000;
         let data = vec!["hello", "world"];
         let thread =
             sync_receive_multipart_repeated(address, SocketType::DEALER, data.clone(), count);
 
-        send_multipart_repeated(sock, data, count).await?;
+        send_multipart_repeated(&mut sock, data, count).await?;
 
         thread.join().unwrap();
 
