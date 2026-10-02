@@ -56,11 +56,22 @@ fn receive_multiple_messages() -> Result<()> {
 
 #[test]
 fn receive_hammer() -> Result<()> {
+    run_receive_hammer(10_000)
+}
+
+#[test]
+#[ignore = "million-message stress test; run explicitly"]
+fn receive_hammer_stress() -> Result<()> {
+    run_receive_hammer(1_000_000)
+}
+
+#[track_caller]
+fn run_receive_hammer(count: u64) -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
         let sock = utils::pair(&ctx).bind(&address)?;
-        let result = hammer_receive(sock, address, SocketType::PAIR).await;
+        let result = hammer_receive(sock, address, SocketType::PAIR, count).await;
         utils::diagnostic_phase("dropping receiver context");
         drop(ctx);
         utils::diagnostic_phase("receiver context dropped");

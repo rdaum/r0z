@@ -52,10 +52,20 @@ CI covers the synchronous and FFI crates only.
 
 ## Receive stress diagnostics
 
-To inspect the million-message DEALER test, run:
+Normal receive load tests send 10,000 multipart messages per adapter. The million-message versions
+are ignored by default. Both versions use the same content assertions, diagnostics, and 60-second
+deadline.
+
+To run all million-message receive stress tests, use:
 
 ```sh
-cargo test -p r0z-async --all-features --test dealer receive_hammer -- --exact
+cargo test -p r0z-async --all-features hammer_stress -- --ignored
+```
+
+To run only the million-message DEALER test, use:
+
+```sh
+cargo test -p r0z-async --all-features --test dealer receive_hammer_stress -- --ignored --exact
 ```
 
 The stress tests report the test source, active adapter, elapsed time, and sender and receiver

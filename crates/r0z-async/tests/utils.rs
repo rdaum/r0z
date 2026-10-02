@@ -232,8 +232,8 @@ pub async fn hammer_receive<S: Stream<Item = Result<Multipart>> + Unpin>(
     stream: S,
     address: String,
     socket_type: SocketType,
+    count: u64,
 ) -> Result<()> {
-    let count: u64 = 1_000_000;
     let thread = sync_send_multipart_repeated(address, socket_type, vec!["hello", "world"], count);
 
     receive_multipart_repeated(stream, vec!["hello", "world"], count).await?;

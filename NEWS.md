@@ -1,5 +1,8 @@
 # Unreleased (r0z workspace, 2026-10-02)
 
+- Reduced normal async receive load tests to 10,000 messages per adapter. Kept the million-message
+  versions as ignored stress tests for explicit runs.
+
 - Added receive stress-test progress and shutdown diagnostics that survive watchdog aborts. Kept the
   60-second deadline and disabled fail-fast cancellation for the adapter CI matrix.
 

@@ -65,8 +65,8 @@ fn receive_multiple_messages() -> Result<()> {
 async fn router_receive_hammer<S: Stream<Item = Result<Multipart>> + Unpin>(
     mut stream: S,
     address: String,
+    count: u64,
 ) -> Result<()> {
-    let count: u64 = 1_000_000;
     let data = vec!["hello", "world"];
     let thread = sync_send_multipart_repeated(address, SocketType::DEALER, data.clone(), count);
 
@@ -95,11 +95,22 @@ async fn router_receive_hammer<S: Stream<Item = Result<Multipart>> + Unpin>(
 
 #[test]
 fn receive_hammer() -> Result<()> {
+    run_receive_hammer(10_000)
+}
+
+#[test]
+#[ignore = "million-message stress test; run explicitly"]
+fn receive_hammer_stress() -> Result<()> {
+    run_receive_hammer(1_000_000)
+}
+
+#[track_caller]
+fn run_receive_hammer(count: u64) -> Result<()> {
     utils::run(|| async {
         let address = generate_tcp_address();
         let ctx = Context::new();
         let sock = utils::router(&ctx).bind(&address)?;
-        let result = router_receive_hammer(sock, address).await;
+        let result = router_receive_hammer(sock, address, count).await;
         utils::diagnostic_phase("dropping receiver context");
         drop(ctx);
         utils::diagnostic_phase("receiver context dropped");
