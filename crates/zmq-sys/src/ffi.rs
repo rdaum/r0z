@@ -242,7 +242,7 @@ fn bindgen_test_layout_zmq_msg_t() {
         concat!("Alignment of ", stringify!(zmq_msg_t))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_msg_t>())).__ as *const _ as usize },
+        ::std::mem::offset_of!(zmq_msg_t, __),
         0usize,
         concat!(
             "Offset of field: ",
@@ -428,7 +428,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         concat!("Alignment of ", stringify!(zmq_pollitem_t))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).socket as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, socket),
         0usize,
         concat!(
             "Offset of field: ",
@@ -438,7 +438,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).fd as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, fd),
         8usize,
         concat!(
             "Offset of field: ",
@@ -448,7 +448,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).events as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, events),
         12usize,
         concat!(
             "Offset of field: ",
@@ -458,7 +458,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).revents as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, revents),
         14usize,
         concat!(
             "Offset of field: ",
@@ -468,7 +468,8 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
 }
-#[cfg(not(target_pointer_width = "64"))]
+#[test]
+#[cfg(target_pointer_width = "32")]
 fn bindgen_test_layout_zmq_pollitem_t() {
     assert_eq!(
         ::std::mem::size_of::<zmq_pollitem_t>(),
@@ -481,7 +482,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         concat!("Alignment of ", stringify!(zmq_pollitem_t))
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).socket as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, socket),
         0usize,
         concat!(
             "Offset of field: ",
@@ -491,7 +492,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).fd as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, fd),
         4usize,
         concat!(
             "Offset of field: ",
@@ -501,7 +502,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).events as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, events),
         8usize,
         concat!(
             "Offset of field: ",
@@ -511,7 +512,7 @@ fn bindgen_test_layout_zmq_pollitem_t() {
         )
     );
     assert_eq!(
-        unsafe { &(*(::std::ptr::null::<zmq_pollitem_t>())).revents as *const _ as usize },
+        ::std::mem::offset_of!(zmq_pollitem_t, revents),
         10usize,
         concat!(
             "Offset of field: ",

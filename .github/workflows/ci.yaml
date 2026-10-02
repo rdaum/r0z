@@ -7,29 +7,49 @@ jobs:
     name: Build
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            packages: --workspace
+          - os: macos-latest
+            packages: --workspace
+          - os: windows-latest
+            packages: --workspace --exclude tmq
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Cargo build
-        run: cargo build --workspace --all-targets
+        run: cargo build ${{ matrix.packages }} --all-targets
   test:
     name: Test
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            packages: --workspace
+          - os: macos-latest
+            packages: --workspace
+          - os: windows-latest
+            packages: --workspace --exclude tmq
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Cargo test
-        run: cargo test --workspace --all-targets
+        run: cargo test ${{ matrix.packages }} --all-targets
+      - name: Cargo doc tests
+        run: cargo test ${{ matrix.packages }} --doc
   lint:
     name: Lint
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            packages: --workspace
+          - os: macos-latest
+            packages: --workspace
+          - os: windows-latest
+            packages: --workspace --exclude tmq
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Cargo clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
+        run: cargo clippy ${{ matrix.packages }} --all-targets -- -D warnings

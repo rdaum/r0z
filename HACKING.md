@@ -8,6 +8,30 @@ If you intend to provide a contribution, please check the
 
 [contribution guidelines]: ./CONTRIBUTING.md
 
+## Workspace commands
+
+On Linux or macOS, run these commands from the repository root:
+
+```sh
+cargo build --workspace --all-targets
+cargo test --workspace --all-targets
+cargo test --workspace --doc
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+On Windows, exclude the async package because its current implementation requires Unix:
+
+```sh
+cargo build --workspace --exclude tmq --all-targets
+cargo test --workspace --exclude tmq --all-targets
+cargo test --workspace --exclude tmq --doc
+cargo clippy --workspace --exclude tmq --all-targets -- -D warnings
+```
+
+For a single package, use `cargo test -p zmq`, `cargo test -p zmq-sys`, or `cargo test -p tmq`.
+The `fuzz/` harness and `msrv-test/` consumer remain outside the main workspace.
+Both depend on `crates/zmq` through a local path.
+
 ## Regenerating the C bindings
 
 The C low-level, unsafe C binding is provided by the `zmq-sys` crate,
@@ -25,7 +49,7 @@ bindgen \
    --whitelist-function "^zmq_.*" \
    --whitelist-type "^zmq_.*" \
    --whitelist-var "^ZMQ_.*" ~/src/zeromq-4.1.6/include/zmq.h
-   > zmq-sys/src/ffi.rs
+   > crates/zmq-sys/src/ffi.rs
 ```
 
-[`ffi.rs`]: ./zmq-sys/src/ffi.rs
+[`ffi.rs`]: ./crates/zmq-sys/src/ffi.rs

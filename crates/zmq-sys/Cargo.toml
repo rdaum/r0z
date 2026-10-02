@@ -5,11 +5,11 @@ authors = [
     "a.rottmann@gmx.at",
     "erick.tryzelaar@gmail.com",
 ]
-license = "MIT/Apache-2.0"
+license.workspace = true
 description = "Low-level bindings to the zeromq library"
 keywords = ["ffi", "bindings"]
 categories = ["external-ffi-bindings"]
-repository = "https://github.com/rdaum/rust-zmq"
+repository.workspace = true
 build = "build/main.rs"
 links = "zmq"
 
@@ -17,8 +17,8 @@ links = "zmq"
 libsodium = ["libsodium-sys-stable"]
 
 [dependencies]
-libsodium-sys-stable = { version = "1.0", optional = true }
-libc = "0.2.25"
+libsodium-sys-stable = { workspace = true, optional = true }
+libc.workspace = true
 
 [build-dependencies]
-zeromq-src = "0.3.6+4.3.5"
+zeromq-src.workspace = true

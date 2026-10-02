@@ -19,6 +19,21 @@ The `zmq` crate provides bindings for the `libzmq` library from the
 be safe (in the usual Rust sense), but it follows the C API closely,
 so it is not very idiomatic.
 
+# Workspace
+
+This repository contains a Cargo workspace for synchronous and asynchronous ZeroMQ bindings.
+
+| Directory | Package | Purpose |
+| --- | --- | --- |
+| `crates/zmq` | `zmq` | Safe synchronous bindings |
+| `crates/zmq-sys` | `zmq-sys` | Native build and FFI bindings |
+| `crates/zmq-async` | `tmq` | Async bindings imported from `tmq` |
+
+The async crate currently requires Tokio and Unix. Runtime independence is planned but not yet implemented.
+Package names remain unchanged. The imported `tmq` package has publication disabled until it receives a new name.
+See [async import details](crates/zmq-async/UPSTREAM.md) for its source and attribution.
+See [workspace commands](HACKING.md#workspace-commands) for build and test instructions.
+
 # Fork Status
 
 This repository is a maintained fork of
@@ -74,7 +89,7 @@ fn main() {
 ```
 
 You can find more usage examples in
-https://github.com/erickt/rust-zmq/tree/master/examples.
+[the synchronous examples](crates/zmq/examples) and [the async examples](crates/zmq-async/examples).
 
 # Notes
 
