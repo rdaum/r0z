@@ -2,6 +2,11 @@
 
 **r0z** provides Rust bindings to native [ZeroMQ](https://zeromq.org/), through the `libzmq` C API.
 
+[![Crates.io](https://img.shields.io/crates/v/r0z.svg)](https://crates.io/crates/r0z)
+[![Documentation](https://docs.rs/r0z/badge.svg)](https://docs.rs/r0z)
+[![License](https://img.shields.io/badge/license-MIT%20OR%20Apache%202.0-blue.svg)](https://github.com/rdaum/r0z/blob/main/PROVENANCE.md)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink)](https://github.com/sponsors/rdaum)
+
 It is not a new implementation of ZeroMQ written in Rust.
 
 Native `libzmq` handles messaging, transports, queues, and protocol behavior.
@@ -174,6 +179,14 @@ messages on close.
 Async sockets default to zero linger. Closing them discards queued outgoing messages. Set linger
 explicitly to permit a finite or infinite wait during context shutdown. See the
 [async shutdown guide](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/README.md#shutdown-and-linger).
+
+## Support development
+
+> If `r0z` is useful in your work, consider sponsoring development on
+> [GitHub Sponsors](https://github.com/sponsors/rdaum). I also offer consulting in systems
+> engineering, profiling and performance tuning, and Rust development. My experience includes 10
+> years at Google and more than 25 years in software development. If your team needs help, feel free
+> to reach out.
 
 ## Source and licenses
 
