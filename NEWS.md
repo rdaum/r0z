@@ -1,5 +1,9 @@
 # Unreleased (r0z workspace, 2026-10-02)
 
+- Expanded DEALER/REP tests to cover both bind directions over IPC and TCP, with unsplit and split
+  sockets. Added split socket checks for backpressure, task cancellation, resumed operations, and
+  idle polling under both runtime adapters.
+
 - Reduced normal async receive load tests to 10,000 messages per adapter. Kept the million-message
   versions as ignored stress tests for explicit runs.
 

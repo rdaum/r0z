@@ -1,71 +1,10 @@
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
 use futures::{SinkExt, StreamExt};
-use r0z_async::{AsZmqSocket, Context, Result};
+use r0z_async::{Context, Result};
 use std::time::Duration;
 
 mod utils;
-
-// The upstream tmq #50 trigger: DEALER binds and separate tasks drive its two halves.
-// Run both bind directions, with the receive waiter installed before the first send.
-#[test]
-fn split_dealer_reply_tasks() -> Result<()> {
-    utils::run(|| async {
-        for dealer_binds in [true, false] {
-            let context = Context::new();
-            let (dealer, reply) = if dealer_binds {
-                let dealer = utils::dealer(&context)
-                    .set_linger(0)
-                    .bind("tcp://127.0.0.1:*")?;
-                let address = dealer.get_socket().get_last_endpoint()?.unwrap();
-                (
-                    dealer,
-                    utils::reply(&context).set_linger(0).connect(&address)?,
-                )
-            } else {
-                let reply = utils::reply(&context)
-                    .set_linger(0)
-                    .bind("tcp://127.0.0.1:*")?;
-                let address = reply.get_socket().get_last_endpoint()?.unwrap();
-                (
-                    utils::dealer(&context).set_linger(0).connect(&address)?,
-                    reply,
-                )
-            };
-            let (mut sink, mut stream) = dealer.split::<r0z_async::Multipart>();
-            let (armed, wait_for_reader) = futures::channel::oneshot::channel();
-            let reader = utils::spawn(async move {
-                let first = stream.next();
-                futures::pin_mut!(first);
-                assert!(futures::poll!(&mut first).is_pending());
-                armed.send(()).unwrap();
-                let first = first.await.unwrap().unwrap();
-                assert_eq!(first[1].as_str(), Some("0"));
-                for i in 1..100 {
-                    let message = stream.next().await.unwrap().unwrap();
-                    assert_eq!(message[1].as_str(), Some(i.to_string().as_str()));
-                }
-            });
-            let writer = utils::spawn(async move {
-                wait_for_reader.await.unwrap();
-                for i in 0..100 {
-                    sink.send(vec!["", &i.to_string()].into()).await.unwrap();
-                }
-            });
-            let peer = utils::spawn(async move {
-                let mut reply = reply;
-                for _ in 0..100 {
-                    let message = reply.recv().await.unwrap();
-                    reply.send(message).await.unwrap();
-                }
-            });
-            reader.await.unwrap();
-            writer.await.unwrap();
-            peer.await.unwrap();
-        }
-        Ok(())
-    })
-}
 
 #[test]
 fn cancelled_receive_can_wait_again() -> Result<()> {
@@ -140,6 +79,8 @@ fn idle_socket_does_not_busy_poll() -> Result<()> {
 #[cfg(all(feature = "tokio", feature = "async-io"))]
 #[test]
 fn adapters_can_coexist() -> Result<()> {
+    use r0z_async::AsZmqSocket;
+
     let _deadline = utils::Deadline::start();
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)

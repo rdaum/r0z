@@ -80,6 +80,21 @@ enabled. Progress does not extend the deadline. Compare successive snapshots to 
 traffic from a stall, then use the phase to locate blocked shutdown. Adapter CI jobs finish
 independently so one failure does not cancel the remaining combinations.
 
+## Split DEALER tests
+
+Run the split socket regressions with:
+
+```sh
+cargo test -p r0z-async --all-features --test dealer_split
+```
+
+The suite covers both bind directions over IPC and TCP. Each arrangement uses an unsplit socket,
+split halves in one task, or split halves in separate tasks. Separate tests use small inproc queues
+and require an observed blocked send before the peer reads.
+
+The suite also covers task cancellation, resuming cancelled operations in new tasks, and idle poll
+counts. Both adapters run under the shared 60-second watchdog. These tests run in normal CI.
+
 ## Receive timeout and shutdown tests
 
 Run the isolated timeout cases with:
