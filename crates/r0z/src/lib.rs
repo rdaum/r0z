@@ -689,8 +689,7 @@ where
 {
     fn send(self, socket: &Socket, flags: i32) -> Result<()> {
         let mut msg = self.into();
-        zmq_try!(unsafe { r0z_sys::zmq_msg_send(msg_ptr(&mut msg), socket.sock, flags as c_int) });
-        Ok(())
+        socket.send_message(&mut msg, flags)
     }
 }
 
@@ -777,6 +776,24 @@ impl Socket {
         T: Sendable,
     {
         data.send(self, flags)
+    }
+
+    /// Send a native message without copying its payload into another message.
+    ///
+    /// On success, ZeroMQ takes ownership of the payload and leaves `msg` empty.
+    /// Success means the message was accepted, not necessarily delivered to a peer.
+    /// On error, `msg` retains its payload and can be retried or dropped. In particular,
+    /// `EAGAIN` with `DONTWAIT` leaves the message available for a later send.
+    /// Native message flags and metadata can change during an attempted send.
+    ///
+    /// Set `SNDMORE` on every frame except the last frame of a multipart message.
+    /// Retrying a frame does not undo frames already accepted by the socket.
+    pub fn send_message(&self, msg: &mut Message, flags: i32) -> Result<()> {
+        // SAFETY: msg is initialized and exclusively borrowed for this call. The socket
+        // remains live and cannot be shared between threads. On success libzmq leaves
+        // a valid empty message; on error it retains the payload for retry or Drop.
+        zmq_try!(unsafe { r0z_sys::zmq_msg_send(msg_ptr(msg), self.sock, flags as c_int) });
+        Ok(())
     }
 
     /// Send a `Message` message.

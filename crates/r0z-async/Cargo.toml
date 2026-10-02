@@ -41,6 +41,11 @@ name = "poll"
 harness = false
 required-features = ["tokio"]
 
+[[bench]]
+name = "owned_send"
+harness = false
+required-features = ["tokio"]
+
 [[example]]
 name = "client_worker"
 required-features = ["tokio"]

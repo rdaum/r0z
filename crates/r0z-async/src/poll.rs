@@ -161,13 +161,13 @@ impl ZmqPoller {
     pub(crate) fn multipart_send(&self, buffer: &mut Multipart) -> Poll<Result<()>> {
         let len = buffer.len();
 
-        while let Some(msg) = buffer.pop_front() {
+        while let Some(mut msg) = buffer.pop_front() {
             let mut flags = r0z::DONTWAIT;
             if !buffer.is_empty() {
                 flags |= r0z::SNDMORE;
             }
 
-            let result = self.get_socket().send(&*msg, flags);
+            let result = self.get_socket().send_message(&mut msg, flags);
             self.after_io(r0z::POLLOUT)?;
             match result {
                 Ok(_) => {}
