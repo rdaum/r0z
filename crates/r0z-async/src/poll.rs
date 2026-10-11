@@ -11,6 +11,9 @@ use std::{
     task::{Context, Poll},
 };
 
+#[cfg(all(test, unix))]
+mod tests;
+
 /// Implements functions for asynchronous reading and writing of multipart messages.
 pub(crate) struct ZmqPoller {
     registration: Box<dyn Registration>,
