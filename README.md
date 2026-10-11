@@ -81,13 +81,13 @@ remaining work.
 
 ## Use the bindings
 
-The first release uses version `0.1.0` for all three packages. Its dependency declarations are:
+All three packages use version `0.1.1`. Their dependency declarations are:
 
 ```toml
 [dependencies]
-r0z = "0.1.0"
+r0z = "0.1.1"
 # Add this dependency if you need async sockets:
-r0z-async = "0.1.0"
+r0z-async = "0.1.1"
 ```
 
 Applications normally need no direct dependency on `r0z-sys`. For local development, replace the
@@ -138,8 +138,8 @@ To reduce import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]
-zmq = { package = "r0z", version = "0.1.0" }
-tmq = { package = "r0z-async", version = "0.1.0" }
+zmq = { package = "r0z", version = "0.1.1" }
+tmq = { package = "r0z-async", version = "0.1.1" }
 ```
 
 Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages. The new
