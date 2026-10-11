@@ -1,0 +1,19 @@
+[package]
+name = "comparison-r0z"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[features]
+tmq = []
+
+[dependencies]
+api = { package = "r0z-async", path = "../../../crates/r0z-async" }
+comparison-common = { path = "../common" }
+native = { package = "r0z", path = "../../../crates/r0z" }
+
+[[bin]]
+name = "comparison-r0z"
+path = "../native.rs"

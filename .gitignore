@@ -13,3 +13,6 @@ Cargo.lock
 /fuzz/corpus/
 /fuzz/target/
 .idea/
+/benchmarks/comparison/**/__pycache__/
+/benchmarks/comparison/**/target/
+!/benchmarks/comparison/*/Cargo.lock

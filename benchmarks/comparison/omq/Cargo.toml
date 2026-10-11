@@ -1,0 +1,15 @@
+[package]
+name = "comparison-omq"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[workspace]
+
+[dependencies]
+comparison-common = { path = "../common" }
+omq-tokio = { git = "https://github.com/paddor/omq.rs", rev = "e147adbbb8cec462ca09a61537dce30022def14d" }
+
+[[bin]]
+name = "comparison-omq"
+path = "../omq.rs"
