@@ -19,14 +19,14 @@ fn receive(socket: &Socket, payload: &[u8], pointer: *const u8, more: bool) {
 }
 
 test!(eagain_retains_message_for_retry, {
-    for size in [0, 16, 4096, 1024 * 1024] {
+    for size in [0, 16, 32, 33, 4096, 1024 * 1024] {
         let context = Context::new();
         let sender = context.socket(r0z::PUSH).unwrap();
         sender.set_linger(0).unwrap();
         sender.set_sndtimeo(2000).unwrap();
         sender.bind("inproc://retry-message").unwrap();
         let payload = vec![0x5a; size];
-        let mut message = Message::from(payload.as_slice());
+        let mut message = Message::from(payload.clone());
         let pointer = message.as_ptr();
         for _ in 0..3 {
             assert_eq!(

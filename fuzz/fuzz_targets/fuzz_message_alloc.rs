@@ -3,6 +3,12 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
+    // Exercise owned storage on both sides of the small-message threshold.
+    let from_vec = r0z::Message::from(data.to_vec());
+    let from_box = r0z::Message::from(data.to_vec().into_boxed_slice());
+    assert_eq!(&from_vec[..], data);
+    assert_eq!(from_vec, from_box);
+
     if data.len() < std::mem::size_of::<u64>() {
         return;
     }

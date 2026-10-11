@@ -10,6 +10,9 @@ use std::{ptr, slice, str};
 
 use super::errno_to_error;
 
+// A conservative threshold for libzmq's inline storage; larger buffers keep their ownership path.
+const SMALL_OWNED_MESSAGE: usize = 32;
+
 /// Holds a 0MQ message.
 ///
 /// A message is a single frame, either received or created locally and then
@@ -288,18 +291,22 @@ impl<'a> From<&'a [u8]> for Message {
 }
 
 impl From<Vec<u8>> for Message {
-    /// Construct a message from a byte vector without copying the data.
+    /// Takes ownership of a byte vector. Copies payloads of at most 32 bytes into native storage.
     fn from(msg: Vec<u8>) -> Self {
-        Message::from(msg.into_boxed_slice())
+        if msg.len() <= SMALL_OWNED_MESSAGE {
+            Message::from(msg.as_slice())
+        } else {
+            Message::from(msg.into_boxed_slice())
+        }
     }
 }
 
 impl From<Box<[u8]>> for Message {
-    /// Construct a message from a boxed slice without copying the data.
+    /// Takes ownership of a boxed slice. Copies payloads of at most 32 bytes into native storage.
     fn from(data: Box<[u8]>) -> Self {
         let len = data.len();
-        if len == 0 {
-            return Message::new();
+        if len <= SMALL_OWNED_MESSAGE {
+            return Message::from(data.as_ref());
         }
         let raw = Box::into_raw(data);
         unsafe {

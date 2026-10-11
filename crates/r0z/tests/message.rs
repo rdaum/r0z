@@ -35,6 +35,28 @@ quickcheck! {
 }
 
 #[test]
+fn owned_messages_preserve_contents_across_storage_sizes() {
+    for size in [0, 1, 16, 31, 32, 33, 64, 4096] {
+        let payload: Vec<u8> = (0..size).map(|index| index as u8).collect();
+        let mut spare = Vec::with_capacity(size + 64);
+        spare.extend_from_slice(&payload);
+        let boxed = payload.clone().into_boxed_slice();
+        let pointer = boxed.as_ptr();
+        let mut message = Message::from(boxed);
+        assert_eq!(&message[..], payload);
+        if size > 32 {
+            assert_eq!(message.as_ptr(), pointer);
+        }
+        let from_vec = Message::from(spare);
+        assert_eq!(message, from_vec);
+        if size > 0 {
+            message[0] ^= 0xff;
+            assert_eq!(from_vec[0], payload[0]);
+        }
+    }
+}
+
+#[test]
 fn message_gets_rejects_interior_nul_property() {
     let mut msg = Message::new();
     assert_eq!(msg.gets("\0bad"), None);
