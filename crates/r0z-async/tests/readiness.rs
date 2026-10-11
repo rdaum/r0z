@@ -1,11 +1,16 @@
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
-use futures::{task::ArcWake, SinkExt, StreamExt};
+use futures::{task::ArcWake, SinkExt, Stream, StreamExt};
 use r0z_async::{AsZmqSocket, Context, Multipart, Result};
 use std::{
+    cell::RefCell,
+    io,
     pin::Pin,
-    sync::Arc,
-    task::{Context as TaskContext, Poll},
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    task::{Context as TaskContext, Poll, Waker},
     time::Duration,
 };
 
@@ -15,6 +20,136 @@ struct TaskWaker;
 
 impl ArcWake for TaskWaker {
     fn wake_by_ref(_: &Arc<Self>) {}
+}
+
+#[derive(Default)]
+struct CountWakes(AtomicUsize);
+
+impl ArcWake for CountWakes {
+    fn wake_by_ref(this: &Arc<Self>) {
+        this.0.fetch_add(1, Ordering::SeqCst);
+    }
+}
+
+// Keep real native sockets, but withhold reactor notifications. A socket operation must
+// wake the opposite task itself when that operation consumes the relevant native edge.
+struct SilentRuntime;
+
+struct SilentRegistration {
+    socket: r0z::Socket,
+    waker: RefCell<Option<Waker>>,
+}
+
+impl r0z_async::runtime::Runtime for SilentRuntime {
+    fn register(socket: r0z::Socket) -> Result<Box<dyn r0z_async::runtime::Registration>> {
+        Ok(Box::new(SilentRegistration {
+            socket,
+            waker: RefCell::new(None),
+        }))
+    }
+}
+
+impl r0z_async::runtime::Registration for SilentRegistration {
+    fn socket(&self) -> &r0z::Socket {
+        &self.socket
+    }
+
+    fn poll_readable(&self, cx: &mut TaskContext<'_>) -> Poll<io::Result<()>> {
+        self.waker.replace(Some(cx.waker().clone()));
+        Poll::Pending
+    }
+}
+
+#[test]
+fn send_wakes_waiting_receiver_without_a_reactor_notification() -> Result<()> {
+    let _deadline = utils::Deadline::start();
+    let context = Context::new();
+    let dealer = r0z_async::dealer(&context)
+        .with_runtime::<SilentRuntime>()
+        .bind("inproc://send-wakes-receiver")?;
+    let peer = context.socket(r0z::DEALER)?;
+    peer.set_linger(0)?;
+    peer.connect("inproc://send-wakes-receiver")?;
+    let (mut sink, mut stream) = dealer.split::<Multipart>();
+    let reader = Arc::new(CountWakes::default());
+    let read_waker = futures::task::waker(reader.clone());
+    let mut read_cx = TaskContext::from_waker(&read_waker);
+    assert!(Pin::new(&mut stream).poll_next(&mut read_cx).is_pending());
+    reader.0.store(0, Ordering::SeqCst);
+
+    peer.send("incoming", r0z::DONTWAIT)?;
+    let write_waker = futures::task::noop_waker();
+    let mut write_cx = TaskContext::from_waker(&write_waker);
+    let send = sink.send(vec!["outgoing"].into());
+    futures::pin_mut!(send);
+    assert!(matches!(
+        std::future::Future::poll(send.as_mut(), &mut write_cx),
+        Poll::Ready(Ok(()))
+    ));
+    assert!(
+        reader.0.load(Ordering::SeqCst) > 0,
+        "send lost the reader wakeup"
+    );
+    let Poll::Ready(Some(message)) = Pin::new(&mut stream).poll_next(&mut read_cx) else {
+        panic!("incoming message was not ready");
+    };
+    assert_eq!(message?, vec!["incoming"].into());
+    assert_eq!(peer.recv_string(r0z::DONTWAIT)?.unwrap(), "outgoing");
+    Ok(())
+}
+
+#[test]
+fn receive_wakes_waiting_sender_without_a_reactor_notification() -> Result<()> {
+    let _deadline = utils::Deadline::start();
+    let context = Context::new();
+    let dealer = r0z_async::dealer(&context)
+        .with_runtime::<SilentRuntime>()
+        .set_sndhwm(1)
+        .set_rcvhwm(1)
+        .bind("inproc://receive-wakes-sender")?;
+    let peer = context.socket(r0z::DEALER)?;
+    peer.set_linger(0)?;
+    peer.set_sndhwm(1)?;
+    peer.set_rcvhwm(1)?;
+    peer.connect("inproc://receive-wakes-sender")?;
+    let (mut sink, mut stream) = dealer.split::<Multipart>();
+    let writer = Arc::new(CountWakes::default());
+    let write_waker = futures::task::waker(writer.clone());
+    let mut write_cx = TaskContext::from_waker(&write_waker);
+    let mut queued = 0;
+    for _ in 0..8 {
+        let send = sink.send(vec!["outgoing"].into());
+        futures::pin_mut!(send);
+        match std::future::Future::poll(send.as_mut(), &mut write_cx) {
+            Poll::Ready(result) => {
+                result?;
+                queued += 1;
+            }
+            Poll::Pending => break,
+        }
+    }
+    assert!(queued > 0 && queued < 8, "send queue did not fill");
+    writer.0.store(0, Ordering::SeqCst);
+    for _ in 0..queued {
+        assert_eq!(peer.recv_string(r0z::DONTWAIT)?.unwrap(), "outgoing");
+    }
+    peer.send("incoming", r0z::DONTWAIT)?;
+    let read_waker = futures::task::noop_waker();
+    let mut read_cx = TaskContext::from_waker(&read_waker);
+    let Poll::Ready(Some(message)) = Pin::new(&mut stream).poll_next(&mut read_cx) else {
+        panic!("incoming message was not ready");
+    };
+    assert_eq!(message?, vec!["incoming"].into());
+    assert!(
+        writer.0.load(Ordering::SeqCst) > 0,
+        "receive lost the writer wakeup"
+    );
+    assert!(matches!(
+        futures::Sink::<Multipart>::poll_flush(Pin::new(&mut sink), &mut write_cx),
+        Poll::Ready(Ok(()))
+    ));
+    assert_eq!(peer.recv_string(r0z::DONTWAIT)?.unwrap(), "outgoing");
+    Ok(())
 }
 
 #[test]
@@ -154,6 +289,55 @@ fn idle_socket_does_not_busy_poll() -> Result<()> {
             .await
             .is_err());
         assert!(polls < 20, "idle socket was polled {polls} times");
+        Ok(())
+    })
+}
+
+#[test]
+fn receive_rearms_after_draining_a_burst() -> Result<()> {
+    utils::run(|| async {
+        for buffered in [false, true] {
+            let context = Context::new();
+            let receiver = utils::pull(&context).bind("inproc://burst-rearm")?;
+            let mut receiver: Pin<Box<dyn Stream<Item = Result<Multipart>>>> = if buffered {
+                Box::pin(receiver.buffered(4))
+            } else {
+                Box::pin(receiver)
+            };
+            let sender = context.socket(r0z::PUSH)?;
+            sender.set_linger(0)?;
+            sender.connect("inproc://burst-rearm")?;
+            for _ in 0..3 {
+                for _ in 0..8 {
+                    sender.send_multipart(["first", "", "last"], r0z::DONTWAIT)?;
+                }
+                for _ in 0..8 {
+                    assert_eq!(
+                        receiver.next().await.unwrap()?,
+                        vec!["first", "", "last"].into()
+                    );
+                }
+                let mut polls = 0;
+                let receive = futures::future::poll_fn(|cx| {
+                    polls += 1;
+                    receiver.as_mut().poll_next(cx)
+                });
+                assert!(utils::timeout(Duration::from_millis(30), receive)
+                    .await
+                    .is_err());
+                assert!(polls < 20, "drained socket was polled {polls} times");
+
+                let receive = receiver.next();
+                futures::pin_mut!(receive);
+                assert!(futures::poll!(&mut receive).is_pending());
+                sender.send("after idle", r0z::DONTWAIT)?;
+                let message = utils::timeout(Duration::from_secs(2), receive)
+                    .await
+                    .unwrap()
+                    .unwrap()?;
+                assert_eq!(message, vec!["after idle"].into());
+            }
+        }
         Ok(())
     })
 }

@@ -6,6 +6,7 @@ use futures::task::{waker_ref, ArcWake, AtomicWaker};
 use r0z::Socket;
 use std::sync::Arc;
 use std::{
+    cell::Cell,
     collections::VecDeque,
     task::{Context, Poll},
 };
@@ -14,6 +15,8 @@ use std::{
 pub(crate) struct ZmqPoller {
     registration: Box<dyn Registration>,
     waiters: Arc<Waiters>,
+    read_waiting: Cell<bool>,
+    write_waiting: Cell<bool>,
 }
 
 #[derive(Default)]
@@ -34,11 +37,23 @@ impl ZmqPoller {
         Ok(Self {
             registration: register(socket)?,
             waiters: Arc::default(),
+            read_waiting: Cell::new(false),
+            write_waiting: Cell::new(false),
         })
     }
 
     // Native I/O can change the opposite direction without another descriptor edge.
     fn after_io(&self, direction: r0z::PollEvents) -> Result<()> {
+        let opposite_waiting = if direction == r0z::POLLOUT {
+            self.read_waiting.get()
+        } else {
+            self.write_waiting.get()
+        };
+        // No readiness is cached. Without an opposite waiter, the next operation tries I/O
+        // directly and queries ZMQ_EVENTS after registering its waker if it must wait.
+        if !opposite_waiting {
+            return Ok(());
+        }
         let events = self.get_socket().get_events()?;
         self.wake_opposite(events, direction);
         Ok(())
@@ -66,12 +81,13 @@ impl ZmqPoller {
     /// If there is any message in the buffer, it will be returned right away.
     /// If not, a batch of messages up to the capacity of the buffer will be read from the socket.
     ///
-    /// If nothing was received, the read flag is cleared.
+    /// If no message is available, register a wakeup before returning `Poll::Pending`.
     pub(crate) fn multipart_recv_buffered(
         &self,
         cx: &mut Context<'_>,
         read_buffer: &mut ReceiverBuffer,
     ) -> Poll<Result<Multipart>> {
+        self.read_waiting.set(false);
         self.waiters.read.take();
         if read_buffer.is_empty() {
             let mut buffer = Multipart::default();
@@ -117,10 +133,11 @@ impl ZmqPoller {
     /// [http://zguide.zeromq.org/page:all#Multipart-Messages], when one part of a multipart message
     /// has been received, all the others are already available as well).
     ///
-    /// If nothing was received, the read flag is cleared.
+    /// If no message is available, register a wakeup before returning `Poll::Pending`.
     pub(crate) fn multipart_recv(&self, cx: &mut Context<'_>) -> Poll<Result<Multipart>> {
         // Try native I/O first. EAGAIN arms the reactor and checks readiness before waiting.
         // Retire the previous task's waiter even when this attempt completes immediately.
+        self.read_waiting.set(false);
         self.waiters.read.take();
 
         let mut buffer = Multipart::default();
@@ -192,6 +209,7 @@ impl ZmqPoller {
         cx: &mut Context<'_>,
         buffer: &mut Multipart,
     ) -> Poll<Result<()>> {
+        self.write_waiting.set(false);
         self.waiters.write.take();
         while !buffer.is_empty() {
             match self.multipart_send(buffer) {
@@ -208,11 +226,14 @@ impl ZmqPoller {
     }
 
     fn multipart_poll(&self, cx: &mut Context<'_>, event: r0z::PollEvents) -> Poll<Result<()>> {
-        let waiter = if event == r0z::POLLIN {
-            &self.waiters.read
+        let (waiter, waiting) = if event == r0z::POLLIN {
+            (&self.waiters.read, &self.read_waiting)
         } else {
-            &self.waiters.write
+            (&self.waiters.write, &self.write_waiting)
         };
+        // Only socket operations change these flags; reactor wakes leave them set. A cancelled
+        // or already-woken task can cause extra queries, but cannot hide a waiting task.
+        waiting.set(true);
         waiter.register(cx.waker());
         let waker = waker_ref(&self.waiters);
         let mut combined = Context::from_waker(&waker);
@@ -224,6 +245,7 @@ impl ZmqPoller {
             let events = self.get_socket().get_events()?;
             self.wake_opposite(events, event);
             if events.contains(event) {
+                waiting.set(false);
                 waiter.take();
                 return Poll::Ready(Ok(()));
             }
