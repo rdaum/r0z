@@ -1,5 +1,3 @@
-use futures::ready;
-
 use crate::error::TmqError::InterruptedSend;
 use crate::runtime::{Register, Registration};
 use crate::socket::AsZmqSocket;
@@ -74,9 +72,8 @@ impl ZmqPoller {
         cx: &mut Context<'_>,
         read_buffer: &mut ReceiverBuffer,
     ) -> Poll<Result<Multipart>> {
+        self.waiters.read.take();
         if read_buffer.is_empty() {
-            ready!(self.multipart_poll_read_ready(cx))?;
-
             let mut buffer = Multipart::default();
             loop {
                 let mut msg = r0z::Message::new();
@@ -99,9 +96,8 @@ impl ZmqPoller {
                         if !buffer.is_empty() {
                             read_buffer.push_back(buffer);
                         }
-                        self.rearm(cx, r0z::POLLIN)?;
-
                         if read_buffer.is_empty() {
+                            self.rearm(cx, r0z::POLLIN)?;
                             break Poll::Pending;
                         } else {
                             break Poll::Ready(Ok(read_buffer.pop_front().unwrap()));
@@ -123,7 +119,9 @@ impl ZmqPoller {
     ///
     /// If nothing was received, the read flag is cleared.
     pub(crate) fn multipart_recv(&self, cx: &mut Context<'_>) -> Poll<Result<Multipart>> {
-        ready!(self.multipart_poll_read_ready(cx))?;
+        // Try native I/O first. EAGAIN arms the reactor and checks readiness before waiting.
+        // Retire the previous task's waiter even when this attempt completes immediately.
+        self.waiters.read.take();
 
         let mut buffer = Multipart::default();
         loop {
@@ -140,7 +138,6 @@ impl ZmqPoller {
                 }
                 Err(r0z::Error::EAGAIN) => {
                     assert!(buffer.is_empty());
-                    log::warn!("EAGAIN during first message read");
                     self.rearm(cx, r0z::POLLIN)?;
                     return Poll::Pending;
                 }
@@ -195,8 +192,8 @@ impl ZmqPoller {
         cx: &mut Context<'_>,
         buffer: &mut Multipart,
     ) -> Poll<Result<()>> {
+        self.waiters.write.take();
         while !buffer.is_empty() {
-            ready!(self.multipart_poll_write_ready(cx))?;
             match self.multipart_send(buffer) {
                 Poll::Ready(result) => result?,
                 Poll::Pending => {
@@ -208,18 +205,6 @@ impl ZmqPoller {
 
         assert!(buffer.is_empty());
         Poll::Ready(Ok(()))
-    }
-
-    /// Returns `Poll::Ready(Ok(()))` if the given ZMQ socket is ready for writing.
-    /// Returns `Poll::Pending` and schedules a wakeup on the next event for the socket otherwise.
-    pub(crate) fn multipart_poll_write_ready(&self, cx: &mut Context<'_>) -> Poll<Result<()>> {
-        self.multipart_poll(cx, r0z::POLLOUT)
-    }
-
-    /// Returns `Poll::Ready(Ok(()))` if the given ZMQ socket is ready for reading.
-    /// Returns `Poll::Pending` and schedules a wakeup on the next event for the socket otherwise.
-    pub(crate) fn multipart_poll_read_ready(&self, cx: &mut Context<'_>) -> Poll<Result<()>> {
-        self.multipart_poll(cx, r0z::POLLIN)
     }
 
     fn multipart_poll(&self, cx: &mut Context<'_>, event: r0z::PollEvents) -> Poll<Result<()>> {
