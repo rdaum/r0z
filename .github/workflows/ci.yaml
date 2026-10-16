@@ -38,6 +38,14 @@ jobs:
       - uses: actions/checkout@v2
       - name: Cargo test
         run: cargo test ${{ matrix.packages }} --all-targets
+      - name: Test synchronous sockets without CURVE
+        run: cargo test -p r0z --no-default-features --all-targets
+      - name: Verify the synchronous opt-out excludes sodium build dependencies
+        shell: python
+        run: |
+          import subprocess
+          graph = subprocess.check_output(["cargo", "tree", "-p", "r0z", "--no-default-features", "--edges", "normal,build", "--prefix", "none", "--format", "{p}"], text=True)
+          assert not any(name + " v" in graph for name in ("minisign-verify", "zip", "libflate", "ureq", "vcpkg")), graph
       - name: Cargo doc tests
         run: cargo test ${{ matrix.packages }} --doc
   lint:
@@ -83,6 +91,12 @@ jobs:
           if rg '^tokio ' async-dependencies.txt; then
             exit 1
           fi
+      - name: Verify the async opt-out excludes sodium build dependencies
+        shell: python
+        run: |
+          import subprocess
+          graph = subprocess.check_output(["cargo", "tree", "-p", "r0z-async", "--no-default-features", "--features", "${{ matrix.features }}", "--edges", "normal,build", "--prefix", "none", "--format", "{p}"], text=True)
+          assert not any(name + " v" in graph for name in ("minisign-verify", "zip", "libflate", "ureq", "vcpkg")), graph
       - name: Run the async-io example
         if: matrix.features == 'async-io'
         run: cargo run -p r0z-async --no-default-features --features async-io --example async_io

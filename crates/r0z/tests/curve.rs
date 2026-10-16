@@ -1,7 +1,14 @@
+#![cfg(feature = "curve")]
+
 #[macro_use]
 mod common;
 
 use r0z::{z85_decode, Context, CurveKeyPair, Socket};
+
+#[test]
+fn curve_support_is_required() {
+    assert_eq!(r0z::has("curve"), Some(true));
+}
 
 fn create_socketpair() -> (Socket, Socket) {
     let ctx = Context::default();
@@ -27,7 +34,7 @@ fn create_socketpair() -> (Socket, Socket) {
     (sender, receiver)
 }
 
-test_capability!(test_curve_messages, "curve", {
+test!(test_curve_messages, {
     let (sender, receiver) = create_socketpair();
     sender.send("foo", 0).unwrap();
     let msg = receiver.recv_msg(0).unwrap();
@@ -40,20 +47,20 @@ test_capability!(test_curve_messages, "curve", {
     assert_eq!(&msg[..], b"bar");
 });
 
-test_capability!(test_curve_keypair, "curve", {
+test!(test_curve_keypair, {
     let keypair = CurveKeyPair::new().unwrap();
     assert!(keypair.public_key.len() == 32);
     assert!(keypair.secret_key.len() == 32);
 });
 
-test_capability!(test_getset_curve_server, "curve", {
+test!(test_getset_curve_server, {
     let ctx = Context::new();
     let sock = ctx.socket(r0z::REQ).unwrap();
     sock.set_curve_server(true).unwrap();
     assert!(sock.is_curve_server().unwrap());
 });
 
-test_capability!(test_getset_curve_publickey, "curve", {
+test!(test_getset_curve_publickey, {
     let ctx = Context::new();
     let sock = ctx.socket(r0z::REQ).unwrap();
     let key = z85_decode("FX5b8g5ZnOk7$Q}^)Y&?.v3&MIe+]OU7DTKynkUL").unwrap();
@@ -61,7 +68,7 @@ test_capability!(test_getset_curve_publickey, "curve", {
     assert_eq!(sock.get_curve_publickey().unwrap(), key);
 });
 
-test_capability!(test_getset_curve_secretkey, "curve", {
+test!(test_getset_curve_secretkey, {
     let ctx = Context::new();
     let sock = ctx.socket(r0z::REQ).unwrap();
     let key = z85_decode("s9N%S3*NKSU$6pUnpBI&K5HBd[]G$Y3yrK?mhdbS").unwrap();
@@ -69,7 +76,7 @@ test_capability!(test_getset_curve_secretkey, "curve", {
     assert_eq!(sock.get_curve_secretkey().unwrap(), key);
 });
 
-test_capability!(test_getset_curve_serverkey, "curve", {
+test!(test_getset_curve_serverkey, {
     let ctx = Context::new();
     let sock = ctx.socket(r0z::REQ).unwrap();
     let key = z85_decode("FX5b8g5ZnOk7$Q}^)Y&?.v3&MIe+]OU7DTKynkUL").unwrap();

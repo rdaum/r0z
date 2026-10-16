@@ -3,8 +3,9 @@
 Async Rust bindings to native ZeroMQ (`libzmq`), built on `r0z`. This is a fork of `tmq` 0.5.0,
 maintained in the r0z workspace. It is not a ZeroMQ implementation written from scratch in Rust.
 
-The built-in runtime adapters support Tokio and `async-io` on Unix. Tokio is enabled by default.
-Supported socket patterns include request/reply, publish/subscribe, dealer/router, and push/pull.
+The built-in runtime adapters support Tokio and `async-io` on Unix. Tokio and CURVE encryption are
+enabled by default. Supported socket patterns include request/reply, publish/subscribe,
+dealer/router, and push/pull.
 
 ```rust,no_run
 use futures::SinkExt;
@@ -41,7 +42,7 @@ For Tokio, keep the default features. Existing socket constructors still work in
 Tokio runtime. To select Tokio explicitly, call `.with_runtime::<r0z_async::runtime::Tokio>()`
 before `bind` or `connect`.
 
-For `async-io`, disable default features:
+For `async-io`, disable default features and select the adapter:
 
 ```toml
 [dependencies]
@@ -72,9 +73,14 @@ fn main() -> Result<()> {
 }
 ```
 
-This configuration builds without Tokio. The `async-io` adapter also works with executors such as
-smol. When both features are enabled, Tokio remains the default. Select `AsyncIo` explicitly to use
-it. Different sockets can use different adapters in the same application.
+This configuration builds without Tokio or sodium. Add `"curve"` to the feature list if you need
+CURVE encryption. For Tokio without sodium, use `default-features = false` with
+`features = ["tokio"]`. Cargo combines dependency features, so another dependency can still enable
+sodium.
+
+The `async-io` adapter also works with executors such as smol. When both runtime features are
+enabled, Tokio remains the default. Select `AsyncIo` explicitly to use it. Different sockets can use
+different adapters in the same application.
 
 The shared core owns multipart handling, native readiness checks, and separate send and receive
 waiters. Each adapter owns a native socket and its reactor registration. Each socket uses one boxed

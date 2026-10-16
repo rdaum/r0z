@@ -38,12 +38,12 @@ text details, and changes made here.
 
 The Rust binding licenses do not replace the native library licenses.
 
-| Component              | Role                                          | License and source                                                                                          |
-| ---------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `zeromq-src`           | Rust build helper and bundled `libzmq` source | [Wrapper: MIT OR Apache-2.0](https://crates.io/crates/zeromq-src/0.3.6); bundled library has separate terms |
-| `libzmq` 4.3.5         | Native ZeroMQ implementation                  | [MPL-2.0](https://github.com/zeromq/libzmq/blob/v4.3.5/LICENSE)                                             |
-| `libsodium-sys-stable` | Rust build helper and FFI for libsodium       | [MIT OR Apache-2.0](https://crates.io/crates/libsodium-sys-stable)                                          |
-| libsodium              | Native cryptography used for CURVE            | [ISC](https://github.com/jedisct1/libsodium/blob/1.0.20-RELEASE/LICENSE)                                    |
+| Component                   | Role                                                            | License and source                                                                                          |
+| --------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `zeromq-src`                | Rust build helper and bundled `libzmq` source                   | [Wrapper: MIT OR Apache-2.0](https://crates.io/crates/zeromq-src/0.3.6); bundled library has separate terms |
+| `libzmq` 4.3.5              | Native ZeroMQ implementation                                    | [MPL-2.0](https://github.com/zeromq/libzmq/blob/v4.3.5/LICENSE)                                             |
+| Private sodium build module | Native build support adapted from `libsodium-sys-stable` 1.24.3 | MIT OR Apache-2.0; see the origin record below                                                              |
+| libsodium                   | Native cryptography used for CURVE                              | [ISC](https://github.com/jedisct1/libsodium/blob/1.0.22-RELEASE/LICENSE)                                    |
 
 MPL-2.0 permits combining `libzmq` with separately licensed Rust bindings. It does not require
 changing these bindings to MPL-2.0. Mozilla explains this in its
@@ -59,3 +59,15 @@ versions selected by your build when preparing those notices and source links.
 
 The license declarations reviewed here have no conflict that prevents this workspace from combining
 these components. Each dependency still retains its own license obligations.
+
+## Private sodium build support
+
+`crates/r0z-sys/build/sodium.rs` and `sodium_compile.rs` adapt the build code from
+[`libsodium-sys-stable` 1.24.3](https://crates.io/crates/libsodium-sys-stable/1.24.3), by dnaq and
+jedisct1. The original sodiumoxide copyright notice and both build-code licences are retained in
+[`vendor/libsodium`](crates/r0z-sys/vendor/libsodium/README.md).
+
+The module removes unused Rust FFI bindings and component features. It uses explicit library and
+header paths, validates required files, and stages Windows headers for `zeromq-src`. Windows archive
+extraction uses ZIP 9.0.4 or later. Unix builds use the bundled source archive by default. The
+cryptographic source remains unchanged.

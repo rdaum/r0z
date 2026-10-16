@@ -21,7 +21,8 @@ targets = []
 maintenance = { status = "actively-maintained" }
 
 [features]
-default = ["zmq_has"]
+default = ["zmq_has", "curve"]
+curve = ["r0z-sys/libsodium"]
 # zmq_has was added in zeromq 4.1. As we now require 4.1 or newer,
 # this feature is a no-op and only present for backward-compatibility;
 # it will be removed in the next API-breaking release.

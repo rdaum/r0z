@@ -1,5 +1,13 @@
 # Unreleased (r0z 0.1.0 workspace)
 
+- Replaced `libsodium-sys-stable` with private native build support in `r0z-sys`. Unix builds use a
+  bundled, signed libsodium source archive. Windows archives use maintained ZIP tooling. CURVE tests
+  now fail when the `curve` feature is enabled but native encryption support is absent.
+- Added a default-enabled `curve` feature to `r0z` and `r0z-async`. Disable default features to omit
+  sodium, then select an async runtime feature if required.
+- Sodium library overrides now require `SODIUM_INCLUDE_DIR` alongside `SODIUM_LIB_DIR`. Shared
+  sodium configurations fail explicitly because `zeromq-src` requires static linking.
+
 - Prepared all three packages for their first release under the r0z names, each at version 0.1.0.
   Enabled async publishing and added package verification to CI.
 

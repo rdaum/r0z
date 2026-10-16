@@ -19,11 +19,46 @@ description = "Native ZeroMQ (libzmq) build and FFI bindings"
 targets = []
 
 [features]
-libsodium = ["libsodium-sys-stable"]
+libsodium = [
+    "dep:cc",
+    "dep:libflate",
+    "dep:minisign-verify",
+    "dep:pkg-config",
+    "dep:tar",
+    "dep:tempfile",
+    "dep:ureq",
+    "dep:vcpkg",
+    "dep:zip",
+]
 
 [dependencies]
 libc.workspace = true
-libsodium-sys-stable = { workspace = true, optional = true }
 
 [build-dependencies]
 zeromq-src.workspace = true
+cc = { workspace = true, optional = true }
+libflate = { workspace = true, optional = true }
+minisign-verify = { workspace = true, optional = true }
+pkg-config = { workspace = true, optional = true }
+tar = { workspace = true, optional = true }
+tempfile = { workspace = true, optional = true }
+ureq = { workspace = true, optional = true }
+vcpkg = { workspace = true, optional = true }
+zip = { workspace = true, optional = true }
+
+[[test]]
+name = "sodium_build"
+path = "build/main.rs"
+required-features = ["libsodium"]
+
+[dev-dependencies]
+cc.workspace = true
+libflate.workspace = true
+minisign-verify.workspace = true
+pkg-config.workspace = true
+tar.workspace = true
+tempfile.workspace = true
+ureq.workspace = true
+vcpkg.workspace = true
+zeromq-src.workspace = true
+zip.workspace = true

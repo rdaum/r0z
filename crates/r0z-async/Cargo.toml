@@ -21,7 +21,8 @@ all-features = true
 targets = []
 
 [features]
-default = ["tokio"]
+default = ["tokio", "curve"]
+curve = ["r0z/curve"]
 tokio = ["dep:tokio"]
 async-io = ["dep:async-io"]
 

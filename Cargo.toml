@@ -12,21 +12,28 @@ repository = "https://github.com/rdaum/r0z"
 async-executor = "1.14.0"
 async-io = "2.6.0"
 bitflags = "2.13.2"
+cc = "1.8.0"
 criterion = "0.8.2"
 env_logger = { version = "0.11.11", default-features = false }
 futures = { version = "0.3.34", default-features = false, features = ["alloc"] }
 libc = "0.2.189"
-libsodium-sys-stable = "1.24.0"
+libflate = "2.3.2"
 log = "0.4.34"
+minisign-verify = "0.2.5"
 nix = { version = "0.31.3", features = ["poll"] }
+pkg-config = "0.3.34"
 pretty_env_logger = "0.5.0"
 quickcheck = "1.1.0"
-r0z = { version = "0.1.1", path = "crates/r0z" }
-r0z-sys = { version = "0.1.1", path = "crates/r0z-sys", features = ["libsodium"] }
+r0z = { version = "0.1.1", path = "crates/r0z", default-features = false }
+r0z-sys = { version = "0.1.1", path = "crates/r0z-sys" }
 rand = "0.10.3"
+tar = "0.4.46"
 tempfile = "3.27.0"
 thiserror = "2.0.21"
 timebomb = "0.1.2"
 tokio = { version = "1.53.1", features = ["net"] }
 trybuild = "1.0.121"
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
+vcpkg = "0.2.15"
 zeromq-src = "0.3.6"
+zip = { version = "9.0.4", default-features = false, features = ["deflate"] }

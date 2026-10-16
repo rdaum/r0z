@@ -151,8 +151,23 @@ in one dependency graph.
 
 Use current stable Rust and a native C/C++ build toolchain. The build compiles `libzmq` from source
 through `zeromq-src`; the current dependency baseline bundles ZeroMQ 4.3.5. The synchronous crate
-enables libsodium support for CURVE encryption. Installing a system ZeroMQ library alone does not
-replace this source build.
+enables libsodium support through its default `curve` feature. Installing a system ZeroMQ library
+alone does not replace this source build.
+
+To build without CURVE encryption or sodium, disable default features:
+
+```toml
+[dependencies]
+r0z = { version = "0.1.1", default-features = false }
+# For async sockets with Tokio:
+r0z-async = { version = "0.1.1", default-features = false, features = ["tokio"] }
+```
+
+Both public crates enable `curve` by default. Add `"curve"` to the feature list to restore CURVE
+support when selecting features explicitly. Cargo combines features across dependencies; sodium
+remains enabled if another dependency enables CURVE. The Rust CURVE API remains available. Use
+`r0z::has("curve")` to check native support. Key generation returns `ENOTSUP` when support is
+absent.
 
 On Linux or macOS:
 

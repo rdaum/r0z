@@ -30,6 +30,61 @@ For a single package, use `cargo test -p r0z`, `cargo test -p r0z-sys`, or
 `cargo test -p r0z-async`. The `fuzz/` harness and `msrv-test/` consumer remain outside the main
 workspace. Both depend on `crates/r0z` through a local path.
 
+## Sodium builds
+
+Both public crates enable their `curve` feature by default. This feature enables
+`r0z-sys/libsodium`. Disable default features to omit CURVE and sodium; select an async runtime
+adapter explicitly if required. Cargo combines dependency features, so another dependency can still
+enable sodium.
+
+The private native build module provides sodium to `zeromq-src`. It does not expose a Rust
+cryptography API. Without `r0z-sys/libsodium`, ZeroMQ builds without CURVE.
+
+Linux and macOS builds compile the signed source archive in `crates/r0z-sys/vendor/libsodium`. These
+builds require a C compiler, a C++ compiler, and `make`. They do not download native source. If the
+target directory contains spaces, the build uses a temporary directory and copies the results back.
+The temporary directory must have a path without spaces.
+
+Windows builds download signed libsodium 1.0.22 stable archives over HTTPS. MSVC targets use ZIP
+archives; GNU targets use tar archives. The build checks the upstream Minisign signature before
+extraction and caches verified downloads under `OUT_DIR`. Upstream stable archive URLs are mutable.
+For reproducible or offline Windows builds, retain an archive and its signature in
+`SODIUM_DIST_DIR`. Supported archives cover x86, x64, and ARM64 with MSVC, and x86 and x64 with GNU.
+
+The native build accepts these environment variables:
+
+| Variable                | Behaviour                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------- |
+| `SODIUM_LIB_DIR`        | Directory containing `libsodium.a`, or `libsodium.lib` for MSVC. Requires `SODIUM_INCLUDE_DIR`.       |
+| `SODIUM_INCLUDE_DIR`    | Directory containing `sodium.h` and the `sodium/` headers. Requires `SODIUM_LIB_DIR`.                 |
+| `SODIUM_USE_PKG_CONFIG` | Discover static sodium through pkg-config, with vcpkg as a fallback. Cannot accompany explicit paths. |
+| `SODIUM_DIST_DIR`       | Read signed archives from this directory instead of bundled source or Windows downloads.              |
+| `SODIUM_DISABLE_PIE`    | Pass `--disable-pie` to the Unix configure script.                                                    |
+| `SODIUM_LDFLAGS`        | Additional linker flags for the Unix configure script.                                                |
+
+`SODIUM_DIST_DIR` uses `LATEST.tar.gz` for Unix source, `libsodium-1.0.22-stable-msvc.zip` for MSVC,
+or `libsodium-1.0.22-stable-mingw.tar.gz` for GNU Windows. Each archive needs a matching `.minisig`
+file. Source archives must contain the `libsodium-stable/` directory.
+
+`zeromq-src` emits static sodium link directives. `SODIUM_SHARED` and dynamic vcpkg configurations
+are therefore unsupported. Missing libraries or headers stop the build instead of disabling CURVE.
+The build uses compiler selection from `cc`, including target-specific `CC`, `AR`, and `RANLIB`.
+
+Run the build regressions and CURVE key and message tests with:
+
+```sh
+cargo test -p r0z-sys --features libsodium --test sodium_build
+cargo test -p r0z --test curve
+cargo check -p r0z-sys --no-default-features
+cargo test -p r0z --no-default-features --all-targets
+cargo test -p r0z-async --no-default-features --features tokio,async-io --all-targets
+```
+
+With the `curve` feature enabled, the CURVE suite requires `r0z::has("curve") == Some(true)`. It
+cannot skip absent native support. Without this feature, the CURVE suite is disabled. Use a fresh
+target directory to check native build changes. Linux results do not establish macOS, Windows, or
+cross-compilation support.
+
 ## Async runtime adapters
 
 The default workspace commands cover Tokio. Run the same async socket tests with each feature

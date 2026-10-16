@@ -6,7 +6,9 @@
 //! The built-in adapters support Tokio (the default) and `async-io` on Unix.
 //! Disable default features and enable `async-io` to build without Tokio.
 //! Select an adapter per socket with [`SocketBuilder::with_runtime`]; see [`runtime`].
-//! With neither feature, applications must supply their own [`runtime::Runtime`].
+//! With neither runtime feature, applications must supply their own [`runtime::Runtime`].
+//! The default `curve` feature enables CURVE encryption through libsodium.
+//! To omit sodium, disable default features and select only the required runtime adapter.
 //! Socket builders default to zero linger: closing a socket discards queued outgoing messages.
 //! Use [`SocketBuilder::set_linger`] to select a finite or infinite wait during context shutdown.
 //!
