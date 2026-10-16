@@ -31,7 +31,7 @@ tar = "0.4.46"
 tempfile = "3.27.0"
 thiserror = "2.0.21"
 timebomb = "0.1.2"
-tokio = { version = "1.53.1", features = ["net"] }
+tokio = { version = "1.53.3", features = ["net"] }
 trybuild = "1.0.121"
 ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
 vcpkg = "0.2.15"

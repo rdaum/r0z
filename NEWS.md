@@ -1,5 +1,7 @@
 # Unreleased (r0z 0.2.0 workspace)
 
+- Updated the Tokio adapter to use its explicit descriptor registration API. Tokio 1.53.3 or later
+  is now required.
 - Replaced `libsodium-sys-stable` with private native build support in `r0z-sys`. Unix builds use a
   bundled, signed libsodium source archive. Windows archives use maintained ZIP tooling. CURVE tests
   now fail when the `curve` feature is enabled but native encryption support is absent.

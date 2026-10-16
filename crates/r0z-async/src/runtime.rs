@@ -103,12 +103,15 @@ struct TokioRegistration(tokio::io::unix::AsyncFd<SocketSource>);
 #[cfg(all(unix, feature = "tokio"))]
 impl Runtime for Tokio {
     fn register(socket: r0z::Socket) -> crate::Result<Box<dyn Registration>> {
-        Ok(Box::new(TokioRegistration(
-            tokio::io::unix::AsyncFd::with_interest(
-                SocketSource::new(socket)?,
-                tokio::io::Interest::READABLE,
-            )?,
-        )))
+        let source = SocketSource::new(socket)?;
+        // SAFETY: source owns the socket and always returns the same notification fd.
+        // TokioRegistration never replaces the source or exposes mutable access to it.
+        // AsyncFd deregisters before dropping the source, which keeps the fd open until then.
+        let registered = unsafe {
+            tokio::io::unix::AsyncFd::register_with_interest(source, tokio::io::Interest::READABLE)
+        }
+        .map_err(io::Error::from)?;
+        Ok(Box::new(TokioRegistration(registered)))
     }
 }
 
