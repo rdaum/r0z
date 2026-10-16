@@ -81,13 +81,13 @@ remaining work.
 
 ## Use the bindings
 
-All three packages use version `0.1.1`. Their dependency declarations are:
+All three packages use version `0.2.0`. Their dependency declarations are:
 
 ```toml
 [dependencies]
-r0z = "0.1.1"
+r0z = "0.2.0"
 # Add this dependency if you need async sockets:
-r0z-async = "0.1.1"
+r0z-async = "0.2.0"
 ```
 
 Applications normally need no direct dependency on `r0z-sys`. For local development, replace the
@@ -138,14 +138,23 @@ To reduce import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]
-zmq = { package = "r0z", version = "0.1.1" }
-tmq = { package = "r0z-async", version = "0.1.1" }
+zmq = { package = "r0z", version = "0.2.0" }
+tmq = { package = "r0z-async", version = "0.2.0" }
 ```
 
 Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages. The new
 packages cannot replace those names through a patch alone. Migrate dependencies that still use the
 old bindings too. Both native binding packages declare `links = "zmq"`, so Cargo cannot include both
 in one dependency graph.
+
+## Migrating from 0.1
+
+Default builds retain CURVE encryption. If you disable default features, add `"curve"` to keep CURVE
+support. In 0.1, disabling default features did not remove sodium.
+
+Replace direct uses of the `r0z-sys/libsodium-sys-stable` feature with `r0z-sys/libsodium`. Custom
+sodium installations now require both `SODIUM_LIB_DIR` and `SODIUM_INCLUDE_DIR`. Shared sodium
+configurations are unsupported because the native ZeroMQ builder requires static linking.
 
 ## Build and test
 
@@ -158,9 +167,9 @@ To build without CURVE encryption or sodium, disable default features:
 
 ```toml
 [dependencies]
-r0z = { version = "0.1.1", default-features = false }
+r0z = { version = "0.2.0", default-features = false }
 # For async sockets with Tokio:
-r0z-async = { version = "0.1.1", default-features = false, features = ["tokio"] }
+r0z-async = { version = "0.2.0", default-features = false, features = ["tokio"] }
 ```
 
 Both public crates enable `curve` by default. Add `"curve"` to the feature list to restore CURVE

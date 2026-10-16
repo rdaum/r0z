@@ -179,8 +179,16 @@ The benchmark uses Tokio with inproc and TCP sockets. It covers small frames, la
 multipart messages. Payload preparation is outside the timed region. Each sample waits for peer
 receipt, so it measures delivery rather than queue insertion alone.
 
-See [the measurement report](docs/owned-send-benchmark.md) for the baseline, allocation counts,
-results, and reproduction commands.
+## Cross-library benchmarks
+
+The TCP comparison harness uses common measurement code for r0z, tmq, and OMQ. Run a small
+validation pass with:
+
+```sh
+python3 benchmarks/comparison/run.py --smoke
+```
+
+Use a quiet host for performance comparisons. Smoke runs validate the harness only.
 
 ## Release checks
 

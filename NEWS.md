@@ -1,12 +1,33 @@
-# Unreleased (r0z 0.1.0 workspace)
+# Unreleased (r0z 0.2.0 workspace)
 
 - Replaced `libsodium-sys-stable` with private native build support in `r0z-sys`. Unix builds use a
   bundled, signed libsodium source archive. Windows archives use maintained ZIP tooling. CURVE tests
   now fail when the `curve` feature is enabled but native encryption support is absent.
-- Added a default-enabled `curve` feature to `r0z` and `r0z-async`. Disable default features to omit
-  sodium, then select an async runtime feature if required.
+- Added a default-enabled `curve` feature to `r0z` and `r0z-async`. With default features disabled,
+  add `"curve"` to retain encryption support. Previously, these configurations still enabled CURVE.
+  To omit sodium, disable default features and select an async runtime feature if required.
+- Removed the implicit `r0z-sys/libsodium-sys-stable` feature. Use `r0z-sys/libsodium` instead.
 - Sodium library overrides now require `SODIUM_INCLUDE_DIR` alongside `SODIUM_LIB_DIR`. Shared
   sodium configurations fail explicitly because `zeromq-src` requires static linking.
+
+# 0.1.1
+
+- Added controlled readiness race tests for send and receive operations. Added split socket tests
+  with delayed task polls on separate threads under both runtime adapters.
+
+- Async sockets skip post-I/O event queries when no task is waiting in the opposite direction.
+  Readiness checks before waiting and wakeups for split sockets remain in place.
+
+- Owned payloads of at most 32 bytes now use native inline storage. Larger payloads retain the
+  external buffer ownership path.
+
+- Async sockets now attempt nonblocking I/O before they wait for runtime readiness. Post-I/O event
+  checks still wake the opposite direction. Completed operations release their task wakers.
+
+- Added a standalone TCP comparison harness for r0z, tmq, and OMQ, with shared workloads, delivery
+  checks, CPU measurement intervals, and per-run source and result records.
+
+# 0.1.0
 
 - Prepared all three packages for their first release under the r0z names, each at version 0.1.0.
   Enabled async publishing and added package verification to CI.

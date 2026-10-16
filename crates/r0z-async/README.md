@@ -46,7 +46,7 @@ For `async-io`, disable default features and select the adapter:
 
 ```toml
 [dependencies]
-r0z-async = { version = "0.1.1", default-features = false, features = ["async-io"] }
+r0z-async = { version = "0.2.0", default-features = false, features = ["async-io"] }
 async-io = "2.6.0"
 futures = "0.3.34"
 ```
