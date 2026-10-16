@@ -325,6 +325,15 @@ fn stage_msvc_headers(include: &Path, out: &Path) -> PathBuf {
     let root = out.join("sodium-headers");
     let staged = root.join("src/libsodium/include");
     copy_headers(include, &staged);
+    // zeromq-src links static sodium but does not define SODIUM_STATIC for its C++ build.
+    // Select static declarations in the private export header to avoid DLL import symbols.
+    let exports = staged.join("sodium/export.h");
+    let original = fs::read_to_string(&exports).unwrap();
+    fs::write(
+        exports,
+        format!("#ifndef SODIUM_STATIC\n#define SODIUM_STATIC\n#endif\n{original}"),
+    )
+    .unwrap();
     let msvc = root.join("builds/msvc");
     fs::create_dir_all(&msvc).unwrap();
     fs::copy(include.join("sodium/version.h"), msvc.join("version.h")).unwrap();
@@ -392,6 +401,7 @@ mod tests {
         fs::create_dir_all(include.join("sodium")).unwrap();
         fs::write(include.join("sodium.h"), "header").unwrap();
         fs::write(include.join("sodium/version.h"), "version").unwrap();
+        fs::write(include.join("sodium/export.h"), "exports").unwrap();
         let staged = stage_msvc_headers(&include, &temp.path().join("out"));
         let workaround = staged.join("../../../builds/msvc/version.h");
         assert_eq!(fs::read_to_string(&workaround).unwrap(), "version");
@@ -404,6 +414,50 @@ mod tests {
         assert_eq!(
             fs::read_to_string(staged.join("sodium.h")).unwrap(),
             "header"
+        );
+        assert_eq!(
+            fs::read_to_string(include.join("sodium/export.h")).unwrap(),
+            "exports"
+        );
+    }
+
+    // Exercise MSVC declarations on Unix too; Windows socket tests check the final link.
+    #[cfg(unix)]
+    #[test]
+    fn msvc_headers_declare_static_symbols() {
+        let temp = tempfile::tempdir().unwrap();
+        unpack_tar(
+            local_archive(Path::new(VENDOR), "libsodium.tar.gz"),
+            temp.path(),
+        );
+        let source = temp.path().join("libsodium-stable");
+        let include = source.join("src/libsodium/include");
+        fs::copy(
+            source.join("builds/msvc/version.h"),
+            include.join("sodium/version.h"),
+        )
+        .unwrap();
+        let staged = stage_msvc_headers(&include, &temp.path().join("out"));
+        let probe = temp.path().join("exports.c");
+        fs::write(
+            &probe,
+            "#include <sodium/export.h>\n\
+             #define STRINGIFY_INNER(x) #x\n\
+             #define STRINGIFY(x) STRINGIFY_INNER(x)\n\
+             _Static_assert(sizeof(STRINGIFY(SODIUM_EXPORT)) == 1, \"static export\");\n\
+             _Static_assert(sizeof(STRINGIFY(SODIUM_EXPORT_WEAK)) == 1, \"static weak export\");\n",
+        )
+        .unwrap();
+        let output = std::process::Command::new("cc")
+            .args(["-std=c11", "-fsyntax-only", "-D_MSC_VER=1930", "-I"])
+            .arg(staged)
+            .arg(probe)
+            .output()
+            .expect("Cannot run the host C compiler");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
         );
     }
 }

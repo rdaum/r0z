@@ -1,5 +1,6 @@
 # Unreleased (r0z 0.2.0 workspace)
 
+- Fixed Windows MSVC linking by selecting static sodium declarations in the private header copy.
 - Updated the Tokio adapter to use its explicit descriptor registration API. Tokio 1.53.3 or later
   is now required.
 - Replaced `libsodium-sys-stable` with private native build support in `r0z-sys`. Unix builds use a
