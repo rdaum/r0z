@@ -51,6 +51,10 @@ extraction and caches verified downloads under `OUT_DIR`. Upstream stable archiv
 For reproducible or offline Windows builds, retain an archive and its signature in
 `SODIUM_DIST_DIR`. Supported archives cover x86, x64, and ARM64 with MSVC, and x86 and x64 with GNU.
 
+Only Windows hosts build the Rust `zip` dependency. Cross-compilation from Linux or macOS to Windows
+MSVC requires `unzip` to extract the verified archive. The build regression tests also require
+`unzip` on these hosts. Native Linux and macOS builds do not use a ZIP extractor.
+
 The native build accepts these environment variables:
 
 | Variable                | Behaviour                                                                                             |

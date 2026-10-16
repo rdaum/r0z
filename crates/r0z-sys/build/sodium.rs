@@ -12,7 +12,9 @@ use std::{
 use libflate::gzip::Decoder;
 use minisign_verify::{PublicKey, Signature};
 use zeromq_src::LibLocation;
-use {pkg_config, sodium_compile, tar, tempfile, ureq, vcpkg, zip};
+#[cfg(windows)]
+use zip;
+use {pkg_config, sodium_compile, tar, tempfile, ureq, vcpkg};
 
 const PUBLIC_KEY: &str = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3";
 const VENDOR: &str = "vendor/libsodium";
@@ -275,10 +277,7 @@ fn windows(target: &str, out: &Path) -> (PathBuf, PathBuf) {
     }
     fs::create_dir_all(&install).unwrap();
     if msvc {
-        zip::ZipArchive::new(Cursor::new(bytes))
-            .expect("Invalid sodium ZIP archive")
-            .extract(&install)
-            .expect("Cannot extract sodium ZIP archive");
+        unpack_msvc_zip(bytes, &install);
         let profile = if env::var("PROFILE").unwrap() == "release" {
             "Release"
         } else {
@@ -295,6 +294,34 @@ fn windows(target: &str, out: &Path) -> (PathBuf, PathBuf) {
             install.join(arch).join("include"),
         )
     }
+}
+
+#[cfg(windows)]
+fn unpack_msvc_zip(bytes: Vec<u8>, destination: &Path) {
+    zip::ZipArchive::new(Cursor::new(bytes))
+        .expect("Invalid sodium ZIP archive")
+        .extract(destination)
+        .expect("Cannot extract sodium ZIP archive");
+}
+
+#[cfg(not(windows))]
+fn unpack_msvc_zip(bytes: Vec<u8>, destination: &Path) {
+    // Build scripts run on the host. Keep Unix-to-MSVC builds working without a Rust ZIP dependency.
+    let temp = tempfile::tempdir().expect("Cannot create sodium archive directory");
+    let archive = temp.path().join("sodium.zip");
+    fs::write(&archive, bytes).unwrap();
+    let output = std::process::Command::new("unzip")
+        .arg("-q")
+        .arg(&archive)
+        .arg("-d")
+        .arg(destination)
+        .output()
+        .expect("Extracting sodium for a Windows MSVC target requires unzip on non-Windows hosts");
+    assert!(
+        output.status.success(),
+        "Cannot extract sodium ZIP archive: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 fn download(name: &str) -> Vec<u8> {
@@ -359,6 +386,21 @@ fn copy_headers(include: &Path, destination: &Path) {
 mod tests {
     use super::*;
     use tempfile;
+
+    #[test]
+    fn msvc_zip_extracts_to_a_path_with_spaces() {
+        let temp = tempfile::tempdir().unwrap();
+        let destination = temp.path().join("sodium headers");
+        fs::create_dir_all(&destination).unwrap();
+        unpack_msvc_zip(
+            include_bytes!("../tests/fixtures/sodium-headers.zip").to_vec(),
+            &destination,
+        );
+        assert_eq!(
+            fs::read(destination.join("libsodium/include/sodium.h")).unwrap(),
+            b"test sodium header\n"
+        );
+    }
 
     #[test]
     fn bundled_source_has_a_valid_signature() {

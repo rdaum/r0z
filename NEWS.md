@@ -1,5 +1,7 @@
 # Unreleased (r0z 0.2.0 workspace)
 
+- Removed the Rust `zip` dependency from Linux and macOS builds, including builds with CURVE.
+  Cross-compilation to Windows MSVC from these hosts uses `unzip` to extract the signed archive.
 - Fixed Windows MSVC linking by selecting static sodium declarations in the private header copy.
 - Updated the Tokio adapter to use its explicit descriptor registration API. Tokio 1.53.3 or later
   is now required.

@@ -38,6 +38,13 @@ jobs:
       - uses: actions/checkout@v2
       - name: Cargo test
         run: cargo test ${{ matrix.packages }} --all-targets
+      - name: Verify Unix builds exclude the Rust ZIP dependency
+        if: runner.os != 'Windows'
+        shell: python
+        run: |
+          import subprocess
+          graph = subprocess.check_output(["cargo", "tree", "--workspace", "--all-features", "--prefix", "none", "--format", "{p}"], text=True)
+          assert not any(line.startswith("zip v") for line in graph.splitlines()), graph
       - name: Test synchronous sockets without CURVE
         run: cargo test -p r0z --no-default-features --all-targets
       - name: Verify the synchronous opt-out excludes sodium build dependencies

@@ -16,7 +16,7 @@ extern crate tempfile;
 extern crate ureq;
 #[cfg(feature = "libsodium")]
 extern crate vcpkg;
-#[cfg(feature = "libsodium")]
+#[cfg(all(feature = "libsodium", windows))]
 extern crate zip;
 
 use std::env;

@@ -44,6 +44,8 @@ tar = { workspace = true, optional = true }
 tempfile = { workspace = true, optional = true }
 ureq = { workspace = true, optional = true }
 vcpkg = { workspace = true, optional = true }
+
+[target.'cfg(windows)'.build-dependencies]
 zip = { workspace = true, optional = true }
 
 [[test]]
@@ -61,4 +63,6 @@ tempfile.workspace = true
 ureq.workspace = true
 vcpkg.workspace = true
 zeromq-src.workspace = true
+
+[target.'cfg(windows)'.dev-dependencies]
 zip.workspace = true
