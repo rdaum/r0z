@@ -864,7 +864,7 @@ checksum = "f8dcc9c7d52a811697d2151c701e0d08956f92b0e24136cf4cf27b57a6a0d9bf"
 
 [[package]]
 name = "r0z"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "bitflags",
  "env_logger 0.11.11",
@@ -880,7 +880,7 @@ dependencies = [
 
 [[package]]
 name = "r0z-async"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "async-executor",
  "async-io",
@@ -897,7 +897,7 @@ dependencies = [
 
 [[package]]
 name = "r0z-sys"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "cc",
  "libc",
