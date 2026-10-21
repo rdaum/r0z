@@ -1,7 +1,7 @@
+#[cfg(windows)]
+use crate::windows::errno;
 #[cfg(unix)]
 use libc as errno;
-#[cfg(windows)]
-use windows::errno;
 
 const ZMQ_HAUSNUMERO: i32 = 156_384_712;
 

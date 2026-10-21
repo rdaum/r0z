@@ -1,4 +1,9 @@
-# Unreleased (r0z 0.2.1 workspace)
+# Unreleased
+
+- Fixed the Windows errno import in `r0z-sys` after the Rust edition migration. Version 0.2.1 fails
+  to compile on Windows.
+
+# 0.2.1
 
 - Migrated the standalone consumer, fuzz harness, and comparison projects to Rust edition 2024.
 - Migrated all workspace crates to Rust edition 2024. Async examples now configure logging without
