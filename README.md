@@ -81,13 +81,13 @@ remaining work.
 
 ## Use the bindings
 
-All three packages use version `0.2.0`. Their dependency declarations are:
+All three packages use version `0.2.1`. Their dependency declarations are:
 
 ```toml
 [dependencies]
-r0z = "0.2.0"
+r0z = "0.2.1"
 # Add this dependency if you need async sockets:
-r0z-async = "0.2.0"
+r0z-async = "0.2.1"
 ```
 
 Applications normally need no direct dependency on `r0z-sys`. For local development, replace the
@@ -138,8 +138,8 @@ To reduce import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]
-zmq = { package = "r0z", version = "0.2.0" }
-tmq = { package = "r0z-async", version = "0.2.0" }
+zmq = { package = "r0z", version = "0.2.1" }
+tmq = { package = "r0z-async", version = "0.2.1" }
 ```
 
 Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages. The new
@@ -167,9 +167,9 @@ To build without CURVE encryption or sodium, disable default features:
 
 ```toml
 [dependencies]
-r0z = { version = "0.2.0", default-features = false }
+r0z = { version = "0.2.1", default-features = false }
 # For async sockets with Tokio:
-r0z-async = { version = "0.2.0", default-features = false, features = ["tokio"] }
+r0z-async = { version = "0.2.1", default-features = false, features = ["tokio"] }
 ```
 
 Both public crates enable `curve` by default. Add `"curve"` to the feature list to restore CURVE
