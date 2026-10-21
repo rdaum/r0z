@@ -20,9 +20,8 @@ msrv-test/      # separate Cargo workspace with a minimal consumer
 ```
 
 The workspace uses Cargo resolver version 2. Member crates inherit Rust edition 2024 from the root
-manifest. Standalone consumers retain their own editions. Preserve those editions unless the task
-includes an edition change. The `msrv-test` name alone does not establish a tested minimum Rust
-version.
+manifest. The standalone consumer, fuzz harness, and comparison projects also use edition 2024. The
+`msrv-test` name alone does not establish a tested minimum Rust version.
 
 The native build uses `zeromq-src`. The synchronous crate enables libsodium for CURVE support. The
 async crate supports Tokio and async-io adapters on Unix. Keep ZeroMQ logic shared and runtime

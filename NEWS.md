@@ -1,5 +1,6 @@
 # Unreleased (r0z 0.2.0 workspace)
 
+- Migrated the standalone consumer, fuzz harness, and comparison projects to Rust edition 2024.
 - Migrated all workspace crates to Rust edition 2024. Async examples now configure logging without
   changing process environment variables.
 - Added dependency audits for pull requests, dependency changes, and a weekly schedule. The root
