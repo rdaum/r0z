@@ -1,3 +1,5 @@
+mod common;
+
 #[test]
 fn context_io_threads() {
     let ctx = r0z::Context::new();
@@ -26,7 +28,7 @@ fn assert_terminated(context: &r0z::Context) {
 
 #[test]
 fn destroy_invalidates_all_clones() {
-    timebomb::timeout_ms(
+    common::timeout_ms(
         || {
             let mut context = r0z::Context::new();
             let mut clone = context.clone();
@@ -43,7 +45,7 @@ fn destroy_invalidates_all_clones() {
 
 #[test]
 fn context_methods_return_while_destroy_waits_for_sockets() {
-    timebomb::timeout_ms(
+    common::timeout_ms(
         || {
             let mut context = r0z::Context::new();
             let receiver = context.socket(r0z::PULL).unwrap();
@@ -66,7 +68,7 @@ fn context_methods_return_while_destroy_waits_for_sockets() {
 
 #[test]
 fn concurrent_destroy_calls_terminate_once() {
-    timebomb::timeout_ms(
+    common::timeout_ms(
         || {
             let context = r0z::Context::new();
             let barrier = std::sync::Arc::new(std::sync::Barrier::new(4));

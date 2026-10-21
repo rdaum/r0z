@@ -1,5 +1,9 @@
 # Unreleased (r0z 0.2.0 workspace)
 
+- Added dependency audits for pull requests, dependency changes, and a weekly schedule. The root
+  lockfile now fixes the audited versions.
+- Updated TLS certificate dependencies and replaced the test-only `timebomb` dependency with a
+  standard-library timeout helper. This removes the vulnerable `time` 0.1 dependency.
 - Removed the Rust `zip` dependency from Linux and macOS builds, including builds with CURVE.
   Cross-compilation to Windows MSVC from these hosts uses `unzip` to extract the signed archive.
 - Fixed Windows MSVC linking by selecting static sodium declarations in the private header copy.
