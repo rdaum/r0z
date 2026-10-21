@@ -1,6 +1,6 @@
 use std::pin::Pin;
 
-use crate::{poll::ZmqPoller, FromZmqSocket, Multipart, SocketBuilder, TmqError};
+use crate::{FromZmqSocket, Multipart, SocketBuilder, TmqError, poll::ZmqPoller};
 use r0z::Context as ZmqContext;
 
 /// Creates a REQ socket builder. The socket must send before it can receive.

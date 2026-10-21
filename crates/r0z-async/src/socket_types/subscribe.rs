@@ -1,6 +1,6 @@
 use r0z::Context as ZmqContext;
 
-use crate::{poll::ZmqPoller, socket::AsZmqSocket, FromZmqSocket, Receiver, SocketBuilder};
+use crate::{FromZmqSocket, Receiver, SocketBuilder, poll::ZmqPoller, socket::AsZmqSocket};
 
 /// Create a builder for a SUB socket.
 ///

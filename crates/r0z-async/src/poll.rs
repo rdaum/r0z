@@ -2,7 +2,7 @@ use crate::error::TmqError::InterruptedSend;
 use crate::runtime::{Register, Registration};
 use crate::socket::AsZmqSocket;
 use crate::{Multipart, Result};
-use futures::task::{waker_ref, ArcWake, AtomicWaker};
+use futures::task::{ArcWake, AtomicWaker, waker_ref};
 use r0z::Socket;
 use std::sync::Arc;
 use std::{

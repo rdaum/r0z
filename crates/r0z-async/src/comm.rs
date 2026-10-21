@@ -1,6 +1,6 @@
 use crate::{
-    poll::{ReceiverBuffer, ZmqPoller},
     Multipart,
+    poll::{ReceiverBuffer, ZmqPoller},
 };
 
 type Poller = ZmqPoller;

@@ -110,8 +110,8 @@ test!(test_raw_roundtrip, {
     let mut sock = ctx.socket(SocketType::REQ).unwrap();
 
     let ptr = sock.as_mut_ptr(); // doesn't consume the socket
-                                 // NOTE: the socket will give up its context referecnce, but because we
-                                 // still hold a reference in `ctx`, we won't get a deadlock.
+    // NOTE: the socket will give up its context referecnce, but because we
+    // still hold a reference in `ctx`, we won't get a deadlock.
     let raw = sock.into_raw(); // consumes the socket
     assert_eq!(ptr, raw);
     let _ = unsafe { Socket::from_raw(raw) };
@@ -121,8 +121,8 @@ test!(test_raw_roundtrip, {
 // messages (unreliably) across the connection.
 test!(test_conflating_receiver, {
     use std::sync::{
-        atomic::{AtomicBool, Ordering},
         Arc,
+        atomic::{AtomicBool, Ordering},
     };
 
     let ctx = r0z::Context::new();

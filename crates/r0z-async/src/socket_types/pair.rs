@@ -1,6 +1,6 @@
 use r0z::Context as ZmqContext;
 
-use crate::{comm::SenderReceiver, poll::ZmqPoller, FromZmqSocket, SocketBuilder};
+use crate::{FromZmqSocket, SocketBuilder, comm::SenderReceiver, poll::ZmqPoller};
 
 /// Create a builder for a PAIR socket.
 pub fn pair(context: &ZmqContext) -> SocketBuilder<Pair> {

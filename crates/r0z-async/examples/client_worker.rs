@@ -13,8 +13,8 @@
 //! The proxy is implemented using asynchronous sockets as an example of using `futures::select`.
 //! A more performant solution would be to use `r0z::proxy`, which is designed for this usage.
 
-use futures::{future, SinkExt, StreamExt};
-use r0z_async::{dealer, router, Context, Multipart};
+use futures::{SinkExt, StreamExt, future};
+use r0z_async::{Context, Multipart, dealer, router};
 use rand::RngExt;
 use std::{error::Error, rc::Rc, time::Duration};
 use tokio::time::sleep;

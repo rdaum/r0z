@@ -1,5 +1,5 @@
 use log::info;
-use r0z_async::{request, Context, Message, Result};
+use r0z_async::{Context, Message, Result, request};
 use std::env;
 
 #[tokio::main]

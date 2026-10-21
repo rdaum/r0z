@@ -5,7 +5,7 @@ use criterion::Criterion;
 
 use futures::{SinkExt, StreamExt};
 use r0z::SocketType;
-use r0z_async::{pull, push, SocketExt};
+use r0z_async::{SocketExt, pull, push};
 use std::thread::spawn;
 
 fn poll_benchmark(c: &mut Criterion) {

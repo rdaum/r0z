@@ -1,7 +1,7 @@
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
 use r0z_async::{
-    request_reply::RequestReplyState as State, AsZmqSocket, Context, Multipart, Result, TmqError,
+    AsZmqSocket, Context, Multipart, Result, TmqError, request_reply::RequestReplyState as State,
 };
 use std::time::Duration;
 
@@ -70,9 +70,11 @@ fn cancelled_send_resumes_the_original_multipart() -> Result<()> {
         server.send(vec!["ack"].into()).await?;
         assert_eq!(client.recv().await?, vec!["ack"].into());
         // No duplicate or replacement request was queued.
-        assert!(utils::timeout(Duration::from_millis(20), server.recv())
-            .await
-            .is_err());
+        assert!(
+            utils::timeout(Duration::from_millis(20), server.recv())
+                .await
+                .is_err()
+        );
         client.send(vec!["next"].into()).await?;
         assert_eq!(server.recv().await?, vec!["next"].into());
         Ok(())
@@ -96,9 +98,11 @@ fn cancelled_exchange_retains_the_outstanding_reply() -> Result<()> {
                 client.send(vec!["request"].into()).await?;
                 client.recv().await
             };
-            assert!(utils::timeout(Duration::from_millis(30), exchange)
-                .await
-                .is_err());
+            assert!(
+                utils::timeout(Duration::from_millis(30), exchange)
+                    .await
+                    .is_err()
+            );
             assert_eq!(client.state(), State::ReceiveReady);
             invalid(client.send(vec!["retry"].into()).await, State::ReceiveReady);
             assert_eq!(server.recv().await?, vec!["request"].into());
@@ -125,9 +129,11 @@ fn cancelled_reply_receive_and_invalid_calls_preserve_state() -> Result<()> {
             server.send(vec!["too early"].into()).await,
             State::ReceiveReady,
         );
-        assert!(utils::timeout(Duration::from_millis(20), server.recv())
-            .await
-            .is_err());
+        assert!(
+            utils::timeout(Duration::from_millis(20), server.recv())
+                .await
+                .is_err()
+        );
         assert_eq!(server.state(), State::ReceiveReady);
         let mut client = utils::request(&context)
             .set_linger(0)

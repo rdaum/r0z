@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::sync::{mpsc, Once};
+use std::sync::{Once, mpsc};
 use std::thread;
 use std::time::Duration;
 

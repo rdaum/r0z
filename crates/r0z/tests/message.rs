@@ -1,7 +1,7 @@
 #[macro_use]
 mod common;
 
-use quickcheck::{quickcheck, Arbitrary, Gen};
+use quickcheck::{Arbitrary, Gen, quickcheck};
 use r0z::Message;
 
 // A pair which contains two non-equal values

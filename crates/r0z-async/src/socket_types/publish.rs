@@ -1,6 +1,6 @@
 use r0z::Context as ZmqContext;
 
-use crate::{poll::ZmqPoller, FromZmqSocket, Sender, SocketBuilder};
+use crate::{FromZmqSocket, Sender, SocketBuilder, poll::ZmqPoller};
 
 /// Create a builder for a PUB socket.
 ///

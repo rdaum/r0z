@@ -1,10 +1,10 @@
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
-use futures::{channel::oneshot, future::BoxFuture, task::ArcWake, SinkExt, StreamExt};
-use r0z_async::{runtime::Runtime, AsZmqSocket, Multipart, Result};
+use futures::{SinkExt, StreamExt, channel::oneshot, future::BoxFuture, task::ArcWake};
+use r0z_async::{AsZmqSocket, Multipart, Result, runtime::Runtime};
 use std::{
     future::Future,
-    sync::{mpsc, Arc, Mutex},
+    sync::{Arc, Mutex, mpsc},
     task::{Context, Poll, Waker},
     thread,
     time::Duration,
@@ -82,10 +82,12 @@ fn cross_thread_wake_order<R: Runtime>(
         let waker = observe_wake(read_wake).await;
         let first = stream.next();
         futures::pin_mut!(first);
-        assert!(first
-            .as_mut()
-            .poll(&mut Context::from_waker(&waker))
-            .is_pending());
+        assert!(
+            first
+                .as_mut()
+                .poll(&mut Context::from_waker(&waker))
+                .is_pending()
+        );
         armed.send(thread::current().id()).unwrap();
         // Receiving a wake must not poll the socket again until the controller permits it.
         reader_resumed.await.unwrap();

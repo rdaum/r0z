@@ -1,6 +1,6 @@
 //! Send and receive with async-io, without a Tokio runtime.
 use futures::{SinkExt, StreamExt};
-use r0z_async::{pull, push, runtime::AsyncIo, Context, Result};
+use r0z_async::{Context, Result, pull, push, runtime::AsyncIo};
 
 fn main() -> Result<()> {
     async_io::block_on(async {

@@ -2,7 +2,7 @@ use futures::StreamExt;
 
 use log::info;
 
-use r0z_async::{pull, Context, Result};
+use r0z_async::{Context, Result, pull};
 use std::env;
 
 #[tokio::main]

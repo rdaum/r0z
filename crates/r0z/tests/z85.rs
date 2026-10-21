@@ -2,7 +2,7 @@
 //use rand::Rng;
 //use std::iter;
 
-use r0z::{z85_decode, z85_encode, DecodeError, EncodeError};
+use r0z::{DecodeError, EncodeError, z85_decode, z85_encode};
 
 #[test]
 fn test_z85() {

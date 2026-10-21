@@ -3,7 +3,7 @@
 #[macro_use]
 mod common;
 
-use r0z::{z85_decode, Context, CurveKeyPair, Socket};
+use r0z::{Context, CurveKeyPair, Socket, z85_decode};
 
 #[test]
 fn curve_support_is_required() {

@@ -1,14 +1,14 @@
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
-use futures::{task::ArcWake, SinkExt, Stream, StreamExt};
+use futures::{SinkExt, Stream, StreamExt, task::ArcWake};
 use r0z_async::{AsZmqSocket, Context, Multipart, Result};
 use std::{
     cell::RefCell,
     io,
     pin::Pin,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
     task::{Context as TaskContext, Poll, Waker},
     time::Duration,
@@ -230,9 +230,11 @@ fn cancelled_receive_can_wait_again() -> Result<()> {
         let mut receiver = utils::pull(&context)
             .set_linger(0)
             .bind("inproc://cancel-receive")?;
-        assert!(utils::timeout(Duration::from_millis(20), receiver.next())
-            .await
-            .is_err());
+        assert!(
+            utils::timeout(Duration::from_millis(20), receiver.next())
+                .await
+                .is_err()
+        );
         let mut sender = utils::push(&context)
             .set_linger(0)
             .connect("inproc://cancel-receive")?;
@@ -285,9 +287,11 @@ fn idle_socket_does_not_busy_poll() -> Result<()> {
             polls += 1;
             futures::Stream::poll_next(std::pin::Pin::new(&mut receiver), cx)
         });
-        assert!(utils::timeout(Duration::from_millis(30), receive)
-            .await
-            .is_err());
+        assert!(
+            utils::timeout(Duration::from_millis(30), receive)
+                .await
+                .is_err()
+        );
         assert!(polls < 20, "idle socket was polled {polls} times");
         Ok(())
     })
@@ -322,9 +326,11 @@ fn receive_rearms_after_draining_a_burst() -> Result<()> {
                     polls += 1;
                     receiver.as_mut().poll_next(cx)
                 });
-                assert!(utils::timeout(Duration::from_millis(30), receive)
-                    .await
-                    .is_err());
+                assert!(
+                    utils::timeout(Duration::from_millis(30), receive)
+                        .await
+                        .is_err()
+                );
                 assert!(polls < 20, "drained socket was polled {polls} times");
 
                 let receive = receiver.next();

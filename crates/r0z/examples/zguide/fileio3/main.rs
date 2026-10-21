@@ -6,8 +6,8 @@
 //! command pipelining to give us a credit-based flow control.
 
 use r0z::SNDMORE;
-use rand::distr::Alphanumeric;
 use rand::RngExt;
+use rand::distr::Alphanumeric;
 use std::fs::File;
 use std::io::{Error, Read, Seek, SeekFrom, Write};
 use std::thread;

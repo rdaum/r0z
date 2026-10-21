@@ -2,7 +2,7 @@
 
 use r0z::Context;
 use r0z_async::Result;
-use std::thread::{spawn, JoinHandle};
+use std::thread::{JoinHandle, spawn};
 use utils::generate_tcp_address;
 
 mod utils;

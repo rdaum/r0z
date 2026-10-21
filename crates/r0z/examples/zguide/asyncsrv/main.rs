@@ -5,7 +5,7 @@
 //  context and conceptually acts as a separate process.
 #![crate_name = "asyncsrv"]
 
-use rand::{rng, RngExt};
+use rand::{RngExt, rng};
 use std::time::Duration;
 use std::{str, thread};
 

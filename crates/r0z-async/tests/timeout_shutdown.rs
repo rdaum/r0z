@@ -3,8 +3,8 @@
 // tmq #47 omits peer behaviour and shutdown details. Separate a missing reply from an
 // undelivered request, and record the exact phase at which native linger blocks teardown.
 use r0z_async::{
-    request, request_reply::RequestReply, request_reply::RequestReplyState, runtime::Runtime,
-    Context, Result, SocketExt,
+    Context, Result, SocketExt, request, request_reply::RequestReply,
+    request_reply::RequestReplyState, runtime::Runtime,
 };
 use std::{
     fs,

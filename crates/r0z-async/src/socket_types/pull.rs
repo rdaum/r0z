@@ -1,6 +1,6 @@
 use r0z::Context as ZmqContext;
 
-use crate::{comm::Receiver, poll::ZmqPoller, FromZmqSocket, SocketBuilder};
+use crate::{FromZmqSocket, SocketBuilder, comm::Receiver, poll::ZmqPoller};
 
 /// Create a builder for a PULL socket.
 pub fn pull(context: &ZmqContext) -> SocketBuilder<Pull> {

@@ -102,22 +102,24 @@ fn main() {
                     .unwrap();
                 receive(&receiver, frames, size);
                 let (delivered, wait_for_delivery) = std::sync::mpsc::channel();
-                let peer = std::thread::spawn(move || loop {
-                    let first = receiver.recv_msg(0).unwrap();
-                    if first.is_empty() {
-                        break;
+                let peer = std::thread::spawn(move || {
+                    loop {
+                        let first = receiver.recv_msg(0).unwrap();
+                        if first.is_empty() {
+                            break;
+                        }
+                        assert_eq!(first.len(), size);
+                        assert_eq!(first.get_more(), frames > 1);
+                        for frame in 1..frames {
+                            let part = receiver.recv_msg(0).unwrap();
+                            assert_eq!(part.len(), size);
+                            assert_eq!(part.get_more(), frame + 1 != frames);
+                        }
+                        for _ in 1..batch {
+                            receive(&receiver, frames, size);
+                        }
+                        delivered.send(()).unwrap();
                     }
-                    assert_eq!(first.len(), size);
-                    assert_eq!(first.get_more(), frames > 1);
-                    for frame in 1..frames {
-                        let part = receiver.recv_msg(0).unwrap();
-                        assert_eq!(part.len(), size);
-                        assert_eq!(part.get_more(), frame + 1 != frames);
-                    }
-                    for _ in 1..batch {
-                        receive(&receiver, frames, size);
-                    }
-                    delivered.send(()).unwrap();
                 });
                 group.throughput(Throughput::Bytes((frames * size * batch) as u64));
                 group.bench_function(BenchmarkId::new(name, batch), |b| {

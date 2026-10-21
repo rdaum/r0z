@@ -5,7 +5,7 @@ use tokio::time::sleep;
 
 use log::info;
 
-use r0z_async::{push, Context, Result};
+use r0z_async::{Context, Result, push};
 use std::env;
 
 #[tokio::main]

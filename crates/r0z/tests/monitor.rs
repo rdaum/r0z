@@ -80,12 +80,16 @@ test!(test_monitor_events, {
         .expect_err("Socket monitoring only works over inproc://");
     assert_eq!(r0z::Error::EPROTONOSUPPORT, err);
 
-    assert!(client
-        .monitor("inproc://monitor-client", r0z::SocketEvent::ALL as i32)
-        .is_ok());
-    assert!(server
-        .monitor("inproc://monitor-server", r0z::SocketEvent::ALL as i32)
-        .is_ok());
+    assert!(
+        client
+            .monitor("inproc://monitor-client", r0z::SocketEvent::ALL as i32)
+            .is_ok()
+    );
+    assert!(
+        server
+            .monitor("inproc://monitor-server", r0z::SocketEvent::ALL as i32)
+            .is_ok()
+    );
 
     let mut client_mon = ctx.socket(r0z::PAIR).unwrap();
     let mut server_mon = ctx.socket(r0z::PAIR).unwrap();

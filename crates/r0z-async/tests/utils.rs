@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
-use std::thread::{spawn as thread_spawn, JoinHandle};
+use std::thread::{JoinHandle, spawn as thread_spawn};
 
 use futures::{Sink, SinkExt, Stream};
 use r0z::{Context, SocketType};
@@ -10,8 +10,8 @@ use futures::StreamExt;
 use r0z_async::{Multipart, Result, TmqError};
 use rand::RngExt;
 use std::sync::{
-    atomic::{AtomicU64, Ordering},
     Arc, Barrier, Mutex,
+    atomic::{AtomicU64, Ordering},
 };
 use std::{io::Write, time::Instant};
 

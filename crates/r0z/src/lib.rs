@@ -30,7 +30,7 @@ use std::result;
 use std::string::FromUtf8Error;
 use std::sync::{Arc, Mutex};
 
-use r0z_sys::{errno, RawFd};
+use r0z_sys::{RawFd, errno};
 
 macro_rules! zmq_try {
     ($($tt:tt)*) => {{
@@ -45,9 +45,9 @@ macro_rules! zmq_try {
 mod message;
 mod sockopt;
 
-use crate::message::msg_ptr;
-pub use crate::message::Message;
 pub use crate::SocketType::*;
+pub use crate::message::Message;
+use crate::message::msg_ptr;
 
 /// `r0z`-specific Result type.
 pub type Result<T> = result::Result<T, Error>;

@@ -1,8 +1,8 @@
 use r0z::Context as ZmqContext;
 
 use crate::{
-    comm::SenderReceiver, poll::ZmqPoller, socket::AsZmqSocket, FromZmqSocket, Result,
-    SocketBuilder,
+    FromZmqSocket, Result, SocketBuilder, comm::SenderReceiver, poll::ZmqPoller,
+    socket::AsZmqSocket,
 };
 
 /// Create a builder for a ROUTER socket.

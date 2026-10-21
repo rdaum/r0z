@@ -1,9 +1,9 @@
 #![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
 
 use futures::{
+    SinkExt, StreamExt,
     channel::oneshot,
     future::{AbortHandle, Abortable},
-    SinkExt, StreamExt,
 };
 use r0z_async::{AsZmqSocket, Context, Multipart, Result};
 use std::{future::Future, task::Poll, time::Duration};
@@ -300,9 +300,11 @@ async fn assert_idle(operation: impl Future) {
         polls += 1;
         operation.as_mut().poll(cx)
     });
-    assert!(utils::timeout(Duration::from_millis(30), counted)
-        .await
-        .is_err());
+    assert!(
+        utils::timeout(Duration::from_millis(30), counted)
+            .await
+            .is_err()
+    );
     assert!(polls < 20, "idle split operation was polled {polls} times");
 }
 

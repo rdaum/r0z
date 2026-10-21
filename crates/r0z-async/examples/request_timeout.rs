@@ -1,4 +1,4 @@
-use r0z_async::{reply, request, request_reply::RequestReplyState, Context, Result};
+use r0z_async::{Context, Result, reply, request, request_reply::RequestReplyState};
 use std::time::Duration;
 
 #[tokio::main]

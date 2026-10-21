@@ -1,6 +1,6 @@
 use futures::StreamExt;
 
-use r0z_async::{subscribe, Context, Result};
+use r0z_async::{Context, Result, subscribe};
 
 use log::info;
 use std::env;

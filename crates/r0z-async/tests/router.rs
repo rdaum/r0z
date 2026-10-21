@@ -6,7 +6,7 @@ use r0z::{Context, SocketType};
 use r0z_async::{Multipart, Result};
 
 use futures::Stream;
-use std::thread::{spawn, JoinHandle};
+use std::thread::{JoinHandle, spawn};
 use utils::{generate_tcp_address, sync_send_multipart_repeated, sync_send_multiparts};
 
 mod utils;

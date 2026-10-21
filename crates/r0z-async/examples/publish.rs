@@ -1,4 +1,4 @@
-use r0z_async::{publish, Context, Result};
+use r0z_async::{Context, Result, publish};
 
 use futures::SinkExt;
 use log::info;

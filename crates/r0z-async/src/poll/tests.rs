@@ -2,8 +2,9 @@ use super::*;
 use std::{
     io,
     sync::{
+        Mutex,
         atomic::{AtomicBool, AtomicUsize, Ordering},
-        mpsc, Mutex,
+        mpsc,
     },
     task::Waker,
     thread,

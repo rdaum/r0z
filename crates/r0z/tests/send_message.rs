@@ -1,7 +1,7 @@
 #[macro_use]
 mod common;
 
-use r0z::{Context, Error, Message, Socket, DONTWAIT, SNDMORE};
+use r0z::{Context, DONTWAIT, Error, Message, SNDMORE, Socket};
 
 fn assert_retained(message: &Message, pointer: *const u8, payload: &[u8]) {
     assert_eq!(message.as_ptr(), pointer);

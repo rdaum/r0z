@@ -633,7 +633,7 @@ unsafe extern "C" {
 }
 unsafe extern "C" {
     pub fn zmq_atomic_counter_value(counter_: *mut ::std::os::raw::c_void)
-        -> ::std::os::raw::c_int;
+    -> ::std::os::raw::c_int;
 }
 unsafe extern "C" {
     pub fn zmq_atomic_counter_destroy(counter_p_: *mut *mut ::std::os::raw::c_void);

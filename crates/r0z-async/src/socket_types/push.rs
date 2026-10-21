@@ -1,6 +1,6 @@
 use r0z::Context as ZmqContext;
 
-use crate::{comm::Sender, poll::ZmqPoller, FromZmqSocket, SocketBuilder};
+use crate::{FromZmqSocket, SocketBuilder, comm::Sender, poll::ZmqPoller};
 
 /// Create a builder for a PUSH socket.
 pub fn push(context: &ZmqContext) -> SocketBuilder<Push> {
