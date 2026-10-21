@@ -9,12 +9,10 @@ use std::{
     time::Duration,
 };
 
+use crate::sodium_compile;
 use libflate::gzip::Decoder;
 use minisign_verify::{PublicKey, Signature};
 use zeromq_src::LibLocation;
-#[cfg(windows)]
-use zip;
-use {pkg_config, sodium_compile, tar, tempfile, ureq, vcpkg};
 
 const PUBLIC_KEY: &str = "RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaLn73Y7GFO3";
 const VENDOR: &str = "vendor/libsodium";
@@ -385,7 +383,6 @@ fn copy_headers(include: &Path, destination: &Path) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile;
 
     #[test]
     fn msvc_zip_extracts_to_a_path_with_spaces() {

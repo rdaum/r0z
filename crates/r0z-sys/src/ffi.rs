@@ -179,48 +179,48 @@ pub const ZMQ_STREAMER: u32 = 1;
 pub const ZMQ_FORWARDER: u32 = 2;
 pub const ZMQ_QUEUE: u32 = 3;
 pub type __uint8_t = ::std::os::raw::c_uchar;
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_errno() -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_strerror(errnum_: ::std::os::raw::c_int) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_version(
         major_: *mut ::std::os::raw::c_int,
         minor_: *mut ::std::os::raw::c_int,
         patch_: *mut ::std::os::raw::c_int,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_ctx_new() -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_ctx_term(context_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_ctx_shutdown(context_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_ctx_set(
         context_: *mut ::std::os::raw::c_void,
         option_: ::std::os::raw::c_int,
         optval_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_ctx_get(
         context_: *mut ::std::os::raw::c_void,
         option_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_init(io_threads_: ::std::os::raw::c_int) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_term(context_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_ctx_destroy(context_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
 #[repr(C)]
@@ -260,13 +260,13 @@ impl Default for zmq_msg_t {
 pub type zmq_free_fn = ::std::option::Option<
     unsafe extern "C" fn(data_: *mut ::std::os::raw::c_void, hint_: *mut ::std::os::raw::c_void),
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_init(msg_: *mut zmq_msg_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_init_size(msg_: *mut zmq_msg_t, size_: usize) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_init_data(
         msg_: *mut zmq_msg_t,
         data_: *mut ::std::os::raw::c_void,
@@ -275,67 +275,67 @@ extern "C" {
         hint_: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_send(
         msg_: *mut zmq_msg_t,
         s_: *mut ::std::os::raw::c_void,
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_recv(
         msg_: *mut zmq_msg_t,
         s_: *mut ::std::os::raw::c_void,
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_close(msg_: *mut zmq_msg_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_move(dest_: *mut zmq_msg_t, src_: *mut zmq_msg_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_copy(dest_: *mut zmq_msg_t, src_: *mut zmq_msg_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_data(msg_: *mut zmq_msg_t) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_size(msg_: *const zmq_msg_t) -> usize;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_more(msg_: *const zmq_msg_t) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_get(
         msg_: *const zmq_msg_t,
         property_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_set(
         msg_: *mut zmq_msg_t,
         property_: ::std::os::raw::c_int,
         optval_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_msg_gets(
         msg_: *const zmq_msg_t,
         property_: *const ::std::os::raw::c_char,
     ) -> *const ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_socket(
         arg1: *mut ::std::os::raw::c_void,
         type_: ::std::os::raw::c_int,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_close(s_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_setsockopt(
         s_: *mut ::std::os::raw::c_void,
         option_: ::std::os::raw::c_int,
@@ -343,7 +343,7 @@ extern "C" {
         optvallen_: usize,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_getsockopt(
         s_: *mut ::std::os::raw::c_void,
         option_: ::std::os::raw::c_int,
@@ -351,31 +351,31 @@ extern "C" {
         optvallen_: *mut usize,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_bind(
         s_: *mut ::std::os::raw::c_void,
         addr_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_connect(
         s_: *mut ::std::os::raw::c_void,
         addr_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_unbind(
         s_: *mut ::std::os::raw::c_void,
         addr_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_disconnect(
         s_: *mut ::std::os::raw::c_void,
         addr_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_send(
         s_: *mut ::std::os::raw::c_void,
         buf_: *const ::std::os::raw::c_void,
@@ -383,7 +383,7 @@ extern "C" {
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_send_const(
         s_: *mut ::std::os::raw::c_void,
         buf_: *const ::std::os::raw::c_void,
@@ -391,7 +391,7 @@ extern "C" {
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_recv(
         s_: *mut ::std::os::raw::c_void,
         buf_: *mut ::std::os::raw::c_void,
@@ -399,7 +399,7 @@ extern "C" {
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_socket_monitor(
         s_: *mut ::std::os::raw::c_void,
         addr_: *const ::std::os::raw::c_char,
@@ -527,21 +527,21 @@ impl Default for zmq_pollitem_t {
         unsafe { ::std::mem::zeroed() }
     }
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_poll(
         items_: *mut zmq_pollitem_t,
         nitems_: ::std::os::raw::c_int,
         timeout_: ::std::os::raw::c_long,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_proxy(
         frontend_: *mut ::std::os::raw::c_void,
         backend_: *mut ::std::os::raw::c_void,
         capture_: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_proxy_steerable(
         frontend_: *mut ::std::os::raw::c_void,
         backend_: *mut ::std::os::raw::c_void,
@@ -549,24 +549,24 @@ extern "C" {
         control_: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_has(capability_: *const ::std::os::raw::c_char) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_device(
         type_: ::std::os::raw::c_int,
         frontend_: *mut ::std::os::raw::c_void,
         backend_: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_sendmsg(
         s_: *mut ::std::os::raw::c_void,
         msg_: *mut zmq_msg_t,
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_recvmsg(
         s_: *mut ::std::os::raw::c_void,
         msg_: *mut zmq_msg_t,
@@ -578,7 +578,7 @@ extern "C" {
 pub struct iovec {
     _unused: [u8; 0],
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_sendiov(
         s_: *mut ::std::os::raw::c_void,
         iov_: *mut iovec,
@@ -586,7 +586,7 @@ extern "C" {
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_recviov(
         s_: *mut ::std::os::raw::c_void,
         iov_: *mut iovec,
@@ -594,60 +594,60 @@ extern "C" {
         flags_: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_z85_encode(
         dest_: *mut ::std::os::raw::c_char,
         data_: *const u8,
         size_: usize,
     ) -> *mut ::std::os::raw::c_char;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_z85_decode(dest_: *mut u8, string_: *const ::std::os::raw::c_char) -> *mut u8;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_curve_keypair(
         z85_public_key_: *mut ::std::os::raw::c_char,
         z85_secret_key_: *mut ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_curve_public(
         z85_public_key_: *mut ::std::os::raw::c_char,
         z85_secret_key_: *const ::std::os::raw::c_char,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_atomic_counter_new() -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_atomic_counter_set(
         counter_: *mut ::std::os::raw::c_void,
         value_: ::std::os::raw::c_int,
     );
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_atomic_counter_inc(counter_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_atomic_counter_dec(counter_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_atomic_counter_value(counter_: *mut ::std::os::raw::c_void)
         -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_atomic_counter_destroy(counter_p_: *mut *mut ::std::os::raw::c_void);
 }
 pub type zmq_timer_fn = ::std::option::Option<
     unsafe extern "C" fn(timer_id: ::std::os::raw::c_int, arg: *mut ::std::os::raw::c_void),
 >;
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_new() -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_destroy(timers_p: *mut *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_add(
         timers: *mut ::std::os::raw::c_void,
         interval: usize,
@@ -655,53 +655,53 @@ extern "C" {
         arg: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_cancel(
         timers: *mut ::std::os::raw::c_void,
         timer_id: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_set_interval(
         timers: *mut ::std::os::raw::c_void,
         timer_id: ::std::os::raw::c_int,
         interval: usize,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_reset(
         timers: *mut ::std::os::raw::c_void,
         timer_id: ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_timeout(timers: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_long;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_timers_execute(timers: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_int;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_stopwatch_start() -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_stopwatch_intermediate(
         watch_: *mut ::std::os::raw::c_void,
     ) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_stopwatch_stop(watch_: *mut ::std::os::raw::c_void) -> ::std::os::raw::c_ulong;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_sleep(seconds_: ::std::os::raw::c_int);
 }
 pub type zmq_thread_fn =
     ::std::option::Option<unsafe extern "C" fn(arg1: *mut ::std::os::raw::c_void)>;
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_threadstart(
         func_: zmq_thread_fn,
         arg_: *mut ::std::os::raw::c_void,
     ) -> *mut ::std::os::raw::c_void;
 }
-extern "C" {
+unsafe extern "C" {
     pub fn zmq_threadclose(thread_: *mut ::std::os::raw::c_void);
 }

@@ -158,13 +158,16 @@ pub async fn check_receive_multiparts<
     expected: Vec<Vec<T>>,
 ) -> Result<()> {
     for item in expected.into_iter() {
-        if let Some(msg) = stream.next().await {
-            assert_eq!(
-                msg?,
-                item.into_iter().map(|i| i.into()).collect::<Multipart>()
-            );
-        } else {
-            panic!("Stream ended too soon");
+        match stream.next().await {
+            Some(msg) => {
+                assert_eq!(
+                    msg?,
+                    item.into_iter().map(|i| i.into()).collect::<Multipart>()
+                );
+            }
+            _ => {
+                panic!("Stream ended too soon");
+            }
         }
     }
     Ok(())
@@ -181,11 +184,14 @@ pub async fn receive_multipart_repeated<
     let expected: Multipart = expected.into_iter().map(|i| i.into()).collect();
     progress.phase("receiving");
     for completed in 1..=count {
-        if let Some(msg) = stream.next().await {
-            assert_eq!(msg?, expected);
-            progress.advance(completed);
-        } else {
-            panic!("Stream ended too soon");
+        match stream.next().await {
+            Some(msg) => {
+                assert_eq!(msg?, expected);
+                progress.advance(completed);
+            }
+            _ => {
+                panic!("Stream ended too soon");
+            }
         }
     }
     progress.phase("dropping stream");

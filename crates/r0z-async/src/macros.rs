@@ -111,7 +111,7 @@ macro_rules! impl_sink {
                 self: ::std::pin::Pin<&mut Self>,
                 cx: &mut ::std::task::Context<'_>,
             ) -> ::std::task::Poll<$crate::Result<()>> {
-                let Self {
+                let &mut Self {
                     ref $socket,
                     ref mut $buffer,
                 } = self.get_mut();
@@ -129,7 +129,7 @@ macro_rules! impl_sink {
                 self: ::std::pin::Pin<&mut Self>,
                 cx: &mut ::std::task::Context<'_>,
             ) -> ::std::task::Poll<$crate::Result<()>> {
-                let Self {
+                let &mut Self {
                     ref $socket,
                     ref mut $buffer,
                 } = self.get_mut();
@@ -179,7 +179,7 @@ macro_rules! impl_buffered_stream {
                 self: ::std::pin::Pin<&mut Self>,
                 cx: &mut ::std::task::Context,
             ) -> ::std::task::Poll<::std::option::Option<Self::Item>> {
-                let Self {
+                let &mut Self {
                     ref $socket,
                     ref mut $buffer,
                 } = self.get_mut();

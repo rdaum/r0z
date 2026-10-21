@@ -8,7 +8,8 @@ static CHECK_PTR: AtomicPtr<u8> = AtomicPtr::new(ptr::null_mut());
 
 unsafe impl GlobalAlloc for Allocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        System.alloc(layout)
+        // SAFETY: The caller supplies a valid allocation layout.
+        unsafe { System.alloc(layout) }
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
@@ -16,7 +17,8 @@ unsafe impl GlobalAlloc for Allocator {
             assert_eq!(layout, Layout::new::<[u8; 42]>());
             CHECK_PTR.store(ptr::null_mut(), Ordering::SeqCst);
         }
-        System.dealloc(ptr, layout);
+        // SAFETY: Allocations use System, and the caller supplies the original layout.
+        unsafe { System.dealloc(ptr, layout) };
     }
 }
 

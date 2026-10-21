@@ -9,7 +9,7 @@ authors = [
     "iddm <fx@thefx.co>",
 ]
 categories = ["api-bindings", "asynchronous", "network-programming"]
-edition = "2021"
+edition.workspace = true
 keywords = ["zeromq", "zmq", "async", "messaging"]
 license.workspace = true
 readme = "README.md"

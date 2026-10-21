@@ -8,11 +8,10 @@ use tokio::time::sleep;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    if env::var("RUST_LOG").is_err() {
-        env::set_var("RUST_LOG", "publish=DEBUG");
-    }
-
-    pretty_env_logger::init();
+    let filter = env::var("RUST_LOG").unwrap_or_else(|_| "publish=DEBUG".to_owned());
+    pretty_env_logger::formatted_builder()
+        .parse_filters(&filter)
+        .init();
 
     let mut socket = publish(&Context::new()).bind("tcp://127.0.0.1:7899")?;
 

@@ -20,11 +20,14 @@ fn single_message() -> Result<()> {
         let m2 = "Msg (contd.)";
         let message = Multipart::from(vec![msg(m1.as_bytes()), msg(m2.as_bytes())]);
         requester.send(message).await?;
-        if let Ok(multipart) = requester.recv().await {
-            let expected: Multipart = vec![msg(m1.as_bytes()), msg(m2.as_bytes())].into();
-            assert_eq!(expected, multipart);
-        } else {
-            panic!("Reply is missing.");
+        match requester.recv().await {
+            Ok(multipart) => {
+                let expected: Multipart = vec![msg(m1.as_bytes()), msg(m2.as_bytes())].into();
+                assert_eq!(expected, multipart);
+            }
+            _ => {
+                panic!("Reply is missing.");
+            }
         }
 
         echo.join().unwrap();

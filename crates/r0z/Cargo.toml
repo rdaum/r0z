@@ -7,7 +7,7 @@ authors = [
     "opensource@traversersearch.nl",
 ]
 categories = ["api-bindings", "network-programming"]
-edition = "2018"
+edition.workspace = true
 keywords = ["zeromq", "zmq", "bindings", "messaging"]
 license.workspace = true
 readme = "../../README.md"

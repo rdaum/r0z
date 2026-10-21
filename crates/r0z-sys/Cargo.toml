@@ -7,7 +7,7 @@ authors = [
 ]
 build = "build/main.rs"
 categories = ["external-ffi-bindings"]
-edition = "2015"
+edition.workspace = true
 keywords = ["zeromq", "zmq", "ffi", "bindings"]
 license.workspace = true
 links = "zmq"

@@ -9,10 +9,10 @@ macro_rules! setter {
                 return self;
             }
 
-            if let Some(ref socket) = self.socket {
-                if let Err(err) = socket.$name(value) {
-                    self.error = Some(err.into());
-                }
+            if let Some(ref socket) = self.socket
+                && let Err(err) = socket.$name(value)
+            {
+                self.error = Some(err.into());
             }
 
             self
@@ -102,10 +102,10 @@ where
             return self;
         }
 
-        if let Some(ref socket) = self.socket {
-            if let Err(err) = socket.monitor(monitor_endpoint, events) {
-                self.error = Some(err.into());
-            }
+        if let Some(ref socket) = self.socket
+            && let Err(err) = socket.monitor(monitor_endpoint, events)
+        {
+            self.error = Some(err.into());
         }
 
         self

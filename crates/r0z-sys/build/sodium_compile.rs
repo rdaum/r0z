@@ -2,7 +2,6 @@
 // Copyright (c) 2015 The sodiumoxide Developers
 // Licensed under MIT OR Apache-2.0; see vendor/libsodium/BUILD-LICENSE-*.
 
-use cc;
 use std::{
     env,
     path::{Path, PathBuf},

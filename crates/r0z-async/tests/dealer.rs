@@ -137,12 +137,15 @@ fn proxy_sequence() -> Result<()> {
         let echo = sync_echo(address, SocketType::DEALER, count);
 
         for i in 0..count {
-            if let Some(multipart) = sock.next().await {
-                let multipart = multipart?;
+            match sock.next().await {
+                Some(multipart) => {
+                    let multipart = multipart?;
 
-                assert_eq!(make_msg(i), multipart);
-            } else {
-                panic!("Stream ended too soon.");
+                    assert_eq!(make_msg(i), multipart);
+                }
+                _ => {
+                    panic!("Stream ended too soon.");
+                }
             }
         }
 
@@ -167,13 +170,16 @@ fn proxy_interleaved() -> Result<()> {
             let m2 = format!("Msg #{} (contd.)", i);
             sock.send(vec![msg(m1.as_bytes()), msg(m2.as_bytes())])
                 .await?;
-            if let Some(multipart) = sock.next().await {
-                let multipart = multipart?;
+            match sock.next().await {
+                Some(multipart) => {
+                    let multipart = multipart?;
 
-                let expected: Multipart = vec![msg(m1.as_bytes()), msg(m2.as_bytes())].into();
-                assert_eq!(expected, multipart);
-            } else {
-                panic!("Iteam in stream is missing.");
+                    let expected: Multipart = vec![msg(m1.as_bytes()), msg(m2.as_bytes())].into();
+                    assert_eq!(expected, multipart);
+                }
+                _ => {
+                    panic!("Iteam in stream is missing.");
+                }
             }
         }
 

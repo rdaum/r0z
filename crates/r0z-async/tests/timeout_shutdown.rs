@@ -301,18 +301,18 @@ fn run_child(index: usize, transport: &str, mode: &str) {
             );
             return;
         }
-        if let Some(expected) = case.blocked_phase() {
-            if phases.last() == Some(&expected) {
-                assert!(
-                    phases.contains(&"timeout-returned"),
-                    "{label}: blocked before timeout returned\n{output}"
-                );
-                let since = blocked_since.get_or_insert_with(Instant::now);
-                if since.elapsed() >= Duration::from_millis(200) {
-                    // Infinite linger is expected here. The parent kills and reaps this child.
-                    eprintln!("{label}: timeout returned; native shutdown remained at {expected}");
-                    return;
-                }
+        if let Some(expected) = case.blocked_phase()
+            && phases.last() == Some(&expected)
+        {
+            assert!(
+                phases.contains(&"timeout-returned"),
+                "{label}: blocked before timeout returned\n{output}"
+            );
+            let since = blocked_since.get_or_insert_with(Instant::now);
+            if since.elapsed() >= Duration::from_millis(200) {
+                // Infinite linger is expected here. The parent kills and reaps this child.
+                eprintln!("{label}: timeout returned; native shutdown remained at {expected}");
+                return;
             }
         }
         assert!(

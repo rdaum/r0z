@@ -43,10 +43,14 @@ impl fmt::Debug for Message {
 }
 
 unsafe extern "C" fn drop_msg_data_box(data: *mut c_void, hint: *mut c_void) {
-    drop(Box::from_raw(ptr::slice_from_raw_parts_mut(
-        data as *mut u8,
-        hint as usize,
-    )));
+    // SAFETY: Message::from gives libzmq this boxed slice and its length. Libzmq
+    // invokes this callback once, after the final reference to the data is released.
+    unsafe {
+        drop(Box::from_raw(ptr::slice_from_raw_parts_mut(
+            data as *mut u8,
+            hint as usize,
+        )));
+    }
 }
 
 impl Message {
@@ -108,12 +112,16 @@ impl Message {
     )]
     pub unsafe fn with_capacity_unallocated(len: usize) -> Message {
         let len = Self::checked_msg_len(len);
-        Self::alloc(|msg| r0z_sys::zmq_msg_init_size(msg, len))
+        // SAFETY: The callback initializes the message. The caller must initialize
+        // the payload before reading it, as required by this method's contract.
+        unsafe { Self::alloc(|msg| r0z_sys::zmq_msg_init_size(msg, len)) }
     }
 
     unsafe fn with_size_uninit(len: usize) -> Message {
         let len = Self::checked_msg_len(len);
-        Self::alloc(|msg| r0z_sys::zmq_msg_init_size(msg, len))
+        // SAFETY: The callback initializes the message. Callers initialize its
+        // payload before exposing it through the safe API.
+        unsafe { Self::alloc(|msg| r0z_sys::zmq_msg_init_size(msg, len)) }
     }
 
     /// Create a `Message` with space for `len` bytes that are initialized to 0.
