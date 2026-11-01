@@ -1,3 +1,4 @@
+use crate::runtime::{DefaultRuntime, Runtime};
 use r0z::Context as ZmqContext;
 
 use crate::{FromZmqSocket, Sender, SocketBuilder, poll::ZmqPoller};
@@ -42,17 +43,15 @@ pub fn publish(context: &ZmqContext) -> SocketBuilder<Publish> {
 }
 
 /// Asynchronous PUB socket.
-pub struct Publish {
-    inner: Sender,
+pub struct Publish<R: Runtime = DefaultRuntime> {
+    inner: Sender<R>,
 }
 
-impl FromZmqSocket<Publish> for Publish {
-    fn from_zmq_socket(
-        socket: r0z::Socket,
-        register: crate::runtime::Register,
-    ) -> crate::Result<Self> {
+impl<R: Runtime> FromZmqSocket for Publish<R> {
+    type WithRuntime<S: Runtime> = Publish<S>;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self> {
         Ok(Self {
-            inner: Sender::new(ZmqPoller::from_zmq_socket(socket, register)?),
+            inner: Sender::new(ZmqPoller::from_zmq_socket(socket)?),
         })
     }
 }

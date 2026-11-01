@@ -1,5 +1,25 @@
-# Unreleased (r0z 0.2.2 workspace)
+# Unreleased (r0z 0.3.0 workspace)
 
+- Added a native compio adapter on Unix. Clients can use compio without Tokio. All adapters share
+  multipart handling, backpressure, and REQ/REP state.
+- Changed async socket types to carry a runtime parameter. `with_runtime` changes the builder type.
+  Custom runtimes return an associated concrete registration; `Registration` requires `Unpin`
+  instead of `Send`. Compio sockets stay local; Tokio and async-io sockets retain `Send`.
+- Moved SUB registration to `bind` or `connect`, before topic subscription. Tokio constructors
+  outside a runtime return an I/O error. Construction requires an I/O-enabled runtime.
+- Added compio coverage for socket patterns, readiness, split tasks, cancellation, and shutdown.
+  Pending waits own a duplicated notification descriptor so socket closure stays synchronous. Compio
+  cancellation tokens work independently for send and receive waits. Polling outside the original
+  runtime returns an I/O error. CI explicitly tests both io_uring and polling on Linux.
+- Made event queries after native I/O best effort. Opposite-direction wakeups cannot discard a
+  received frame or report an error after a successful send.
+
+- Removed a random-port collision from the split send regression test. It now binds an OS-assigned
+  TCP port before connecting the sender.
+- Router tests now use OS-assigned TCP ports to avoid collisions with other tests or processes.
+- Added request/echo endpoint, phase, progress, and native error details to watchdog reports. A
+  bind-collision regression checks that peer failures remain visible after an abort with output
+  capture enabled.
 - Fixed the Windows errno import in `r0z-sys` after the Rust edition migration. Version 0.2.1 fails
   to compile on Windows.
 

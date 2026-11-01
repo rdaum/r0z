@@ -2,17 +2,17 @@
 
 /// Implements common functions for a Socket wrapper.
 macro_rules! impl_wrapper {
-    ($type: ty, $target: ty, $field: ident) => {
-        impl $crate::socket::AsZmqSocket for $type {
+    ($type: ident, $target: ident, $field: ident) => {
+        impl<R: $crate::runtime::Runtime> $crate::socket::AsZmqSocket for $type<R> {
             #[inline]
             fn get_socket(&self) -> &::r0z::Socket {
                 &self.$field.get_socket()
             }
         }
-        impl $type {
+        impl<R: $crate::runtime::Runtime> $type<R> {
             #[doc(hidden)]
             #[inline]
-            pub fn into_inner(self) -> $target {
+            pub fn into_inner(self) -> $target<R> {
                 self.$field
             }
         }
@@ -21,8 +21,10 @@ macro_rules! impl_wrapper {
 
 /// Implements `Sink<Multipart, Error=TmqError>` for a Socket wrapping an inner `Sender`.
 macro_rules! impl_wrapper_sink {
-    ($type: ty, $field: ident) => {
-        impl<T: ::std::convert::Into<$crate::Multipart>> ::futures::Sink<T> for $type {
+    ($type: ident, $field: ident) => {
+        impl<R: $crate::runtime::Runtime, T: ::std::convert::Into<$crate::Multipart>>
+            ::futures::Sink<T> for $type<R>
+        {
             type Error = $crate::TmqError;
 
             #[inline]
@@ -59,8 +61,8 @@ macro_rules! impl_wrapper_sink {
 
 /// Implements `Stream<Item=Result<Multipart>` for a Socket wrapping an inner `Receiver`.
 macro_rules! impl_wrapper_stream {
-    ($type: ty, $field: ident) => {
-        impl ::futures::Stream for $type {
+    ($type: ident, $field: ident) => {
+        impl<R: $crate::runtime::Runtime> ::futures::Stream for $type<R> {
             type Item = $crate::Result<$crate::Multipart>;
 
             #[inline]
@@ -77,8 +79,8 @@ macro_rules! impl_wrapper_stream {
 /// Implements AsZmqSocket for the given type.
 /// field: identifier of a field containing a `ZmqPoller`.
 macro_rules! impl_as_socket {
-    ($type: ty, $field: ident) => {
-        impl $crate::socket::AsZmqSocket for $type {
+    ($type: ident, $field: ident) => {
+        impl<R: $crate::runtime::Runtime> $crate::socket::AsZmqSocket for $type<R> {
             #[inline]
             fn get_socket(&self) -> &::r0z::Socket {
                 &self.$field.get_socket()
@@ -88,10 +90,10 @@ macro_rules! impl_as_socket {
 }
 
 macro_rules! impl_buffered {
-    ($type: ty, $field: ident) => {
-        impl $type {
+    ($type: ident, $field: ident) => {
+        impl<R: $crate::runtime::Runtime> $type<R> {
             /// Implements a `buffered` method for the Socket wrapping an inner `Receiver`.
-            pub fn buffered(self, capacity: usize) -> $crate::BufferedReceiver {
+            pub fn buffered(self, capacity: usize) -> $crate::BufferedReceiver<R> {
                 self.$field.buffered(capacity)
             }
         }
@@ -103,8 +105,10 @@ macro_rules! impl_buffered {
 /// $buffer: identifier of a field containing a `Multipart`
 /// $socket: identifier of a field containing a `ZmqPoller`
 macro_rules! impl_sink {
-    ($type: ty, $buffer: ident, $socket: ident) => {
-        impl<T: ::std::convert::Into<$crate::Multipart>> ::futures::Sink<T> for $type {
+    ($type: ident, $buffer: ident, $socket: ident) => {
+        impl<R: $crate::runtime::Runtime, T: ::std::convert::Into<$crate::Multipart>>
+            ::futures::Sink<T> for $type<R>
+        {
             type Error = $crate::TmqError;
 
             fn poll_ready(
@@ -149,8 +153,8 @@ macro_rules! impl_sink {
 /// Implements `Stream<Item=Result<Multipart>>` for the given type.
 /// $socket: identifier of a field containing a `ZmqPoller`
 macro_rules! impl_stream {
-    ($type: ty, $socket: ident) => {
-        impl ::futures::Stream for $type {
+    ($type: ident, $socket: ident) => {
+        impl<R: $crate::runtime::Runtime> ::futures::Stream for $type<R> {
             type Item = $crate::Result<$crate::Multipart>;
 
             fn poll_next(
@@ -171,8 +175,8 @@ macro_rules! impl_stream {
 /// $buffer: identifier of a field containing a `ReceiveBuffer`
 /// $socket: identifier of a field containing a `ZmqPoller`
 macro_rules! impl_buffered_stream {
-    ($type: ty, $buffer: ident, $socket: ident) => {
-        impl ::futures::Stream for $type {
+    ($type: ident, $buffer: ident, $socket: ident) => {
+        impl<R: $crate::runtime::Runtime> ::futures::Stream for $type<R> {
             type Item = $crate::Result<$crate::Multipart>;
 
             fn poll_next(

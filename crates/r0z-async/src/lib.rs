@@ -3,10 +3,10 @@
 //! # r0z-async: native ZeroMQ bindings with runtime adapters
 //!
 //! This crate wraps `r0z` and native `libzmq`. It is derived from `tmq`.
-//! The built-in adapters support Tokio (the default) and `async-io` on Unix.
-//! Disable default features and enable `async-io` to build without Tokio.
+//! The built-in adapters support Tokio (the default), `async-io`, and compio on Unix.
+//! Disable default features and enable `async-io` or `compio` to build without Tokio.
 //! Select an adapter per socket with [`SocketBuilder::with_runtime`]; see [`runtime`].
-//! With neither runtime feature, applications must supply their own [`runtime::Runtime`].
+//! With no runtime feature, applications must supply their own [`runtime::Runtime`].
 //! The default `curve` feature enables CURVE encryption through libsodium.
 //! To omit sodium, disable default features and select only the required runtime adapter.
 //! Socket builders default to zero linger: closing a socket discards queued outgoing messages.

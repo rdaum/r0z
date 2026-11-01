@@ -51,9 +51,12 @@ fn expect_message(peer: &r0z::Socket, sequence: usize) {
     assert_eq!(received, message(sequence));
 }
 
-fn cross_thread_wake_order<R: Runtime>(
+fn cross_thread_wake_order<R: Runtime + 'static>(
     block_on: impl Fn(BoxFuture<'static, Result<()>>) -> Result<()> + Sync,
-) -> Result<()> {
+) -> Result<()>
+where
+    R::Registration: Send + 'static,
+{
     let context = r0z::Context::new();
     let dealer = r0z_async::dealer(&context)
         .with_runtime::<R>()

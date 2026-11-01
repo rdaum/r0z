@@ -1,22 +1,22 @@
-#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 
 use futures::{SinkExt, StreamExt};
 use r0z::{Context, SocketType};
 
-use r0z_async::{Multipart, Result};
+use r0z_async::{AsZmqSocket, Multipart, Result};
 
 use futures::Stream;
 use std::thread::{JoinHandle, spawn};
-use utils::{generate_tcp_address, sync_send_multipart_repeated, sync_send_multiparts};
+use utils::{sync_send_multipart_repeated, sync_send_multiparts};
 
 mod utils;
 
 #[test]
 fn receive_single_message() -> Result<()> {
     utils::run(|| async {
-        let address = generate_tcp_address();
         let ctx = Context::new();
-        let mut sock = utils::router(&ctx).bind(&address)?;
+        let mut sock = utils::router(&ctx).bind("tcp://127.0.0.1:*")?;
+        let address = sock.get_socket().get_last_endpoint()?.unwrap();
 
         let data = vec!["hello", "world"];
         let thread = sync_send_multiparts(address, SocketType::DEALER, vec![data.clone()]);
@@ -38,9 +38,9 @@ fn receive_single_message() -> Result<()> {
 #[test]
 fn receive_multiple_messages() -> Result<()> {
     utils::run(|| async {
-        let address = generate_tcp_address();
         let ctx = Context::new();
-        let mut sock = utils::router(&ctx).bind(&address)?;
+        let mut sock = utils::router(&ctx).bind("tcp://127.0.0.1:*")?;
+        let address = sock.get_socket().get_last_endpoint()?.unwrap();
 
         let data = vec![vec!["hello", "world"], vec!["second", "message"]];
 
@@ -107,9 +107,9 @@ fn receive_hammer_stress() -> Result<()> {
 #[track_caller]
 fn run_receive_hammer(count: u64) -> Result<()> {
     utils::run(|| async {
-        let address = generate_tcp_address();
         let ctx = Context::new();
-        let sock = utils::router(&ctx).bind(&address)?;
+        let sock = utils::router(&ctx).bind("tcp://127.0.0.1:*")?;
+        let address = sock.get_socket().get_last_endpoint()?.unwrap();
         let result = router_receive_hammer(sock, address, count).await;
         utils::diagnostic_phase("dropping receiver context");
         drop(ctx);
@@ -126,9 +126,9 @@ fn echo() -> Result<()> {
 
         let mut tasks = vec![];
 
-        let addr = generate_tcp_address();
         let ctx = Context::new();
-        let mut router = utils::router(&ctx).bind(&addr).unwrap();
+        let mut router = utils::router(&ctx).bind("tcp://127.0.0.1:*")?;
+        let addr = router.get_socket().get_last_endpoint()?.unwrap();
 
         tasks.push(utils::spawn(async move {
             for _ in 0..(count * client_count) {
@@ -182,11 +182,11 @@ fn proxy_stress() -> Result<()> {
 #[track_caller]
 fn run_proxy(count: u64) -> Result<()> {
     utils::run(|| async {
-        let frontend = generate_tcp_address();
-        let backend = generate_tcp_address();
         let ctx = Context::new();
-        let router = utils::router(&ctx).bind(&frontend)?;
-        let dealer = utils::dealer(&ctx).bind(&backend)?;
+        let router = utils::router(&ctx).bind("tcp://127.0.0.1:*")?;
+        let dealer = utils::dealer(&ctx).bind("tcp://127.0.0.1:*")?;
+        let frontend = router.get_socket().get_last_endpoint()?.unwrap();
+        let backend = dealer.get_socket().get_last_endpoint()?.unwrap();
 
         let client_count: u64 = 3;
         let worker_count: u64 = 2;

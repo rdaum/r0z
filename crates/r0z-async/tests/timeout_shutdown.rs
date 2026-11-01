@@ -1,4 +1,4 @@
-#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 
 // tmq #47 omits peer behaviour and shutdown details. Separate a missing reply from an
 // undelivered request, and record the exact phase at which native linger blocks teardown.
@@ -130,7 +130,9 @@ fn phase(name: &str) {
     io::stdout().flush().unwrap();
 }
 
-async fn receive_timeout(socket: &mut RequestReply, mode: &str) {
+mod utils;
+
+async fn receive_timeout<R: Runtime>(socket: &mut RequestReply<R>, mode: &str) {
     let duration = Duration::from_millis(30);
     match mode {
         #[cfg(feature = "tokio")]
@@ -153,6 +155,14 @@ async fn receive_timeout(socket: &mut RequestReply, mode: &str) {
                 futures::future::select(receive, timer).await,
                 futures::future::Either::Right(_)
             ));
+        }
+        #[cfg(feature = "compio")]
+        "compio-timeout" => {
+            assert!(
+                compio::time::timeout(duration, socket.recv())
+                    .await
+                    .is_err()
+            );
         }
         _ => panic!("unknown timeout mode: {mode}"),
     }
@@ -235,7 +245,7 @@ async fn scenario<R: Runtime>(
     drop(peer);
     drop(peer_context);
     drop(reserved_port);
-    phase("done");
+    phase("scenario-returned");
     Ok(())
 }
 
@@ -333,6 +343,8 @@ fn receive_timeouts_and_shutdown() {
         "tokio-select",
         #[cfg(feature = "async-io")]
         "async-io-select",
+        #[cfg(feature = "compio")]
+        "compio-timeout",
     ];
     for mode in modes {
         for transport in ["ipc", "tcp"] {
@@ -352,7 +364,7 @@ fn timeout_shutdown_child() -> Result<()> {
     let mode = std::env::var("R0Z_TIMEOUT_MODE").unwrap();
     let transport = std::env::var("R0Z_TIMEOUT_TRANSPORT").unwrap();
     let directory = std::env::var("R0Z_TIMEOUT_DIRECTORY").unwrap();
-    match mode.as_str() {
+    let result = match mode.as_str() {
         #[cfg(feature = "tokio")]
         "tokio-timeout" | "tokio-select" => tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -371,6 +383,22 @@ fn timeout_shutdown_child() -> Result<()> {
             &mode,
             Path::new(&directory),
         )),
+        #[cfg(feature = "compio")]
+        "compio-timeout" => {
+            let runtime = utils::compio_runtime()?;
+            let result = runtime.block_on(scenario::<r0z_async::runtime::Compio>(
+                case,
+                &transport,
+                &mode,
+                Path::new(&directory),
+            ));
+            phase("drop-runtime");
+            drop(runtime);
+            result
+        }
         _ => panic!("unknown timeout mode: {mode}"),
-    }
+    };
+    result?;
+    phase("done");
+    Ok(())
 }

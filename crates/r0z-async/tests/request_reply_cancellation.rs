@@ -1,4 +1,4 @@
-#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 
 use r0z_async::{
     AsZmqSocket, Context, Multipart, Result, TmqError, request_reply::RequestReplyState as State,

@@ -26,7 +26,7 @@ pub use router::router;
 pub use subscribe::subscribe;
 
 #[doc(hidden)]
-pub trait FromZmqSocket<T> {
-    fn from_zmq_socket(socket: r0z::Socket, register: crate::runtime::Register)
-    -> crate::Result<T>;
+pub trait FromZmqSocket: Sized {
+    type WithRuntime<R: crate::runtime::Runtime>: FromZmqSocket;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self>;
 }

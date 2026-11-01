@@ -94,6 +94,14 @@ impl Notifications {
     }
 }
 
+struct ControlledRuntime;
+impl Runtime for ControlledRuntime {
+    type Registration = ControlledRegistration;
+    fn register(_: Socket) -> Result<Self::Registration> {
+        unreachable!("fixture constructs registration")
+    }
+}
+
 struct ControlledRegistration {
     socket: Socket,
     notifications: Arc<Notifications>,
@@ -123,6 +131,49 @@ impl Registration for ControlledRegistration {
     }
 }
 
+#[test]
+fn post_io_event_error_preserves_frames_and_wakes_the_other_direction() {
+    let _deadline = Deadline::start();
+    for operation in OPERATIONS {
+        let mut fixture = Fixture::new();
+        let wakes = Arc::new(CountWakes::default());
+        let waker = futures::task::waker(wakes.clone());
+        if matches!(operation, Operation::Send) {
+            fixture.poller.read_waiting.set(true);
+            fixture.poller.waiters.read.register(&waker);
+        } else {
+            fixture
+                .peer
+                .lock()
+                .unwrap()
+                .send_multipart(FRAMES, 0)
+                .unwrap();
+            fixture.poller.write_waiting.set(true);
+            fixture.poller.waiters.write.register(&waker);
+        }
+        // Fail the event query after the first successful native frame operation.
+        fixture.poller.event_error.set(Some(r0z::Error::ETERM));
+        let mut cx = Context::from_waker(&waker);
+        assert!(matches!(
+            fixture.poll(operation, &mut cx),
+            Poll::Ready(Ok(()))
+        ));
+        assert_eq!(fixture.poller.event_error.get(), None);
+        assert_eq!(wakes.0.load(Ordering::SeqCst), 1);
+        if matches!(operation, Operation::Send) {
+            assert_eq!(
+                fixture
+                    .peer
+                    .lock()
+                    .unwrap()
+                    .recv_multipart(r0z::DONTWAIT)
+                    .unwrap(),
+                FRAMES.map(|frame| frame.as_bytes().to_vec())
+            );
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 enum Operation {
     Receive,
@@ -138,7 +189,7 @@ const OPERATIONS: [Operation; 3] = [
 const FRAMES: [&str; 3] = ["first", "", "last"];
 
 struct Fixture {
-    poller: ZmqPoller,
+    poller: ZmqPoller<ControlledRuntime>,
     peer: Arc<Mutex<Socket>>,
     notifications: Arc<Notifications>,
     receive_buffer: ReceiverBuffer,
@@ -160,13 +211,14 @@ impl Fixture {
         assert!(socket.get_events().unwrap().contains(r0z::POLLOUT));
         let notifications = Arc::new(Notifications::default());
         let poller = ZmqPoller {
-            registration: Box::new(ControlledRegistration {
+            registration: ControlledRegistration {
                 socket,
                 notifications: notifications.clone(),
-            }),
+            },
             waiters: Arc::default(),
             read_waiting: Cell::new(false),
             write_waiting: Cell::new(false),
+            event_error: Cell::new(None),
         };
         Self {
             poller,

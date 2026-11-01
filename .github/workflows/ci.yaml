@@ -78,8 +78,18 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
-        features: ["", "async-io", "tokio,async-io"]
+        features: ["", "async-io", "compio", "tokio,async-io,compio"]
+        compio-driver: [auto]
+        include:
+          - os: ubuntu-latest
+            features: compio
+            compio-driver: poll
+          - os: ubuntu-latest
+            features: compio
+            compio-driver: io-uring
     runs-on: ${{ matrix.os }}
+    env:
+      R0Z_COMPIO_DRIVER: ${{ matrix.compio-driver }}
     steps:
       - uses: actions/checkout@v2
       - name: Check the async core and selected adapters
@@ -91,7 +101,7 @@ jobs:
       - name: Lint the selected adapters
         run: cargo clippy -p r0z-async --no-default-features --features '${{ matrix.features }}' --all-targets -- -D warnings
       - name: Verify the dependency graph excludes Tokio
-        if: matrix.features == '' || matrix.features == 'async-io'
+        if: matrix.features == '' || matrix.features == 'async-io' || matrix.features == 'compio'
         shell: bash
         run: |
           cargo tree -p r0z-async --no-default-features --features '${{ matrix.features }}' --edges normal,build --prefix none --format '{p}' > async-dependencies.txt
@@ -107,3 +117,6 @@ jobs:
       - name: Run the async-io example
         if: matrix.features == 'async-io'
         run: cargo run -p r0z-async --no-default-features --features async-io --example async_io
+      - name: Run the compio example
+        if: matrix.features == 'compio'
+        run: cargo run -p r0z-async --no-default-features --features compio --example compio

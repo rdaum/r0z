@@ -1,5 +1,5 @@
 use crate::error::TmqError::InterruptedSend;
-use crate::runtime::{Register, Registration};
+use crate::runtime::{Registration, Runtime};
 use crate::socket::AsZmqSocket;
 use crate::{Multipart, Result};
 use futures::task::{ArcWake, AtomicWaker, waker_ref};
@@ -15,11 +15,13 @@ use std::{
 mod tests;
 
 /// Implements functions for asynchronous reading and writing of multipart messages.
-pub(crate) struct ZmqPoller {
-    registration: Box<dyn Registration>,
+pub(crate) struct ZmqPoller<R: Runtime> {
+    registration: R::Registration,
     waiters: Arc<Waiters>,
     read_waiting: Cell<bool>,
     write_waiting: Cell<bool>,
+    #[cfg(test)]
+    event_error: Cell<Option<r0z::Error>>,
 }
 
 #[derive(Default)]
@@ -35,31 +37,39 @@ impl ArcWake for Waiters {
     }
 }
 
-impl ZmqPoller {
-    pub(crate) fn from_zmq_socket(socket: r0z::Socket, register: Register) -> Result<Self> {
+impl<R: Runtime> ZmqPoller<R> {
+    pub(crate) fn from_zmq_socket(socket: r0z::Socket) -> Result<Self> {
         Ok(Self {
-            registration: register(socket)?,
+            registration: R::register(socket)?,
             waiters: Arc::default(),
             read_waiting: Cell::new(false),
             write_waiting: Cell::new(false),
+            #[cfg(test)]
+            event_error: Cell::new(None),
         })
     }
 
     // Native I/O can change the opposite direction without another descriptor edge.
-    fn after_io(&self, direction: r0z::PollEvents) -> Result<()> {
+    // This check is best effort: its error must never replace the result of I/O that has
+    // already consumed or sent a frame. On error, wake the other task to observe it itself.
+    fn after_io(&self, direction: r0z::PollEvents) {
         let opposite_waiting = if direction == r0z::POLLOUT {
             self.read_waiting.get()
         } else {
             self.write_waiting.get()
         };
-        // No readiness is cached. Without an opposite waiter, the next operation tries I/O
-        // directly and queries ZMQ_EVENTS after registering its waker if it must wait.
-        if !opposite_waiting {
-            return Ok(());
+        if opposite_waiting {
+            let events = self.events().unwrap_or(r0z::POLLIN | r0z::POLLOUT);
+            self.wake_opposite(events, direction);
         }
-        let events = self.get_socket().get_events()?;
-        self.wake_opposite(events, direction);
-        Ok(())
+    }
+
+    fn events(&self) -> r0z::Result<r0z::PollEvents> {
+        #[cfg(test)]
+        if let Some(error) = self.event_error.take() {
+            return Err(error);
+        }
+        self.get_socket().get_events()
     }
 
     fn wake_opposite(&self, events: r0z::PollEvents, direction: r0z::PollEvents) {
@@ -72,13 +82,13 @@ impl ZmqPoller {
     }
 }
 
-impl AsZmqSocket for ZmqPoller {
+impl<R: Runtime> AsZmqSocket for ZmqPoller<R> {
     fn get_socket(&self) -> &Socket {
         self.registration.socket()
     }
 }
 
-impl ZmqPoller {
+impl<R: Runtime> ZmqPoller<R> {
     /// Attempt to receive a Multipart message from a ZeroMQ socket with buffering.
     ///
     /// If there is any message in the buffer, it will be returned right away.
@@ -92,12 +102,14 @@ impl ZmqPoller {
     ) -> Poll<Result<Multipart>> {
         self.read_waiting.set(false);
         self.waiters.read.take();
+        self.registration
+            .check_context(cx, r0z::POLLIN, &waker_ref(&self.waiters))?;
         if read_buffer.is_empty() {
             let mut buffer = Multipart::default();
             loop {
                 let mut msg = r0z::Message::new();
                 let result = self.get_socket().recv(&mut msg, r0z::DONTWAIT);
-                self.after_io(r0z::POLLIN)?;
+                self.after_io(r0z::POLLIN);
                 match result {
                     Ok(_) => {
                         let more = msg.get_more();
@@ -142,12 +154,14 @@ impl ZmqPoller {
         // Retire the previous task's waiter even when this attempt completes immediately.
         self.read_waiting.set(false);
         self.waiters.read.take();
+        self.registration
+            .check_context(cx, r0z::POLLIN, &waker_ref(&self.waiters))?;
 
         let mut buffer = Multipart::default();
         loop {
             let mut msg = r0z::Message::new();
             let result = self.get_socket().recv(&mut msg, r0z::DONTWAIT);
-            self.after_io(r0z::POLLIN)?;
+            self.after_io(r0z::POLLIN);
             match result {
                 Ok(_) => {
                     let more = msg.get_more();
@@ -185,7 +199,7 @@ impl ZmqPoller {
             }
 
             let result = self.get_socket().send_message(&mut msg, flags);
-            self.after_io(r0z::POLLOUT)?;
+            self.after_io(r0z::POLLOUT);
             match result {
                 Ok(_) => {}
                 Err(r0z::Error::EAGAIN) => {
@@ -214,6 +228,8 @@ impl ZmqPoller {
     ) -> Poll<Result<()>> {
         self.write_waiting.set(false);
         self.waiters.write.take();
+        self.registration
+            .check_context(cx, r0z::POLLOUT, &waker_ref(&self.waiters))?;
         while !buffer.is_empty() {
             match self.multipart_send(buffer) {
                 Poll::Ready(result) => result?,
@@ -245,7 +261,7 @@ impl ZmqPoller {
         // Consume a stale runtime notification and rearm before returning Pending.
         for _ in 0..2 {
             let notification = self.registration.poll_readable(&mut combined)?;
-            let events = self.get_socket().get_events()?;
+            let events = self.events()?;
             self.wake_opposite(events, event);
             if events.contains(event) {
                 waiting.set(false);
