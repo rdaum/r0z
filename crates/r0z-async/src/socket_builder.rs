@@ -36,13 +36,12 @@ macro_rules! setter {
 pub struct SocketBuilder<T> {
     socket: Option<::r0z::Socket>,
     error: Option<TmqError>,
-    register: crate::runtime::Register,
-    _phantom: std::marker::PhantomData<T>,
+    _phantom: std::marker::PhantomData<fn() -> T>,
 }
 
 impl<T> SocketBuilder<T>
 where
-    T: FromZmqSocket<T>,
+    T: FromZmqSocket,
 {
     #[doc(hidden)]
     pub(crate) fn new(context: &Context, socket_type: SocketType) -> Self {
@@ -59,7 +58,6 @@ where
         Self {
             socket,
             error,
-            register: crate::runtime::register_default,
             _phantom: Default::default(),
         }
         .set_linger(0)
@@ -67,11 +65,14 @@ where
 
     /// Selects the runtime adapter used when the socket is registered.
     ///
-    /// This choice is independent for each socket. With both built-in features enabled,
-    /// the default remains Tokio; use `with_runtime::<runtime::AsyncIo>()` to select async-io.
-    pub fn with_runtime<R: crate::runtime::Runtime>(mut self) -> Self {
-        self.register = R::register;
-        self
+    /// This changes the socket type. The selected registration determines its thread safety.
+    /// With multiple features enabled, the default priority is Tokio, async-io, then compio.
+    pub fn with_runtime<R: crate::runtime::Runtime>(self) -> SocketBuilder<T::WithRuntime<R>> {
+        SocketBuilder {
+            socket: self.socket,
+            error: self.error,
+            _phantom: Default::default(),
+        }
     }
 
     /// Connect to a ZMQ endpoint at the given address.
@@ -82,7 +83,7 @@ where
 
         let socket = self.socket.unwrap();
         socket.connect(endpoint)?;
-        T::from_zmq_socket(socket, self.register)
+        T::from_zmq_socket(socket)
     }
 
     /// Bind to a ZMQ endpoint at the given address.
@@ -93,7 +94,7 @@ where
 
         let socket = self.socket.unwrap();
         socket.bind(endpoint)?;
-        T::from_zmq_socket(socket, self.register)
+        T::from_zmq_socket(socket)
     }
 
     /// Configure the socket for [monitoring](http://api.zeromq.org/4-2:zmq-socket-monitor)

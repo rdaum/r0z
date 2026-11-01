@@ -50,17 +50,17 @@ together. The new package names give this maintenance work its own release path.
 
 ## Workspace
 
-| Package                                                                | Rust import | Purpose                                      | Current platform support     |
-| ---------------------------------------------------------------------- | ----------- | -------------------------------------------- | ---------------------------- |
-| [`r0z`](https://github.com/rdaum/r0z/tree/main/crates/r0z)             | `r0z`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows        |
-| [`r0z-sys`](https://github.com/rdaum/r0z/tree/main/crates/r0z-sys)     | `r0z_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows        |
-| [`r0z-async`](https://github.com/rdaum/r0z/tree/main/crates/r0z-async) | `r0z_async` | Async sockets built on `r0z`                 | Unix, with Tokio or async-io |
+| Package                                                                | Rust import | Purpose                                      | Current platform support              |
+| ---------------------------------------------------------------------- | ----------- | -------------------------------------------- | ------------------------------------- |
+| [`r0z`](https://github.com/rdaum/r0z/tree/main/crates/r0z)             | `r0z`       | Safe synchronous bindings to `libzmq`        | Linux, macOS, Windows                 |
+| [`r0z-sys`](https://github.com/rdaum/r0z/tree/main/crates/r0z-sys)     | `r0z_sys`   | Native library build and unsafe FFI bindings | Linux, macOS, Windows                 |
+| [`r0z-async`](https://github.com/rdaum/r0z/tree/main/crates/r0z-async) | `r0z_async` | Async sockets built on `r0z`                 | Unix, with Tokio, async-io, or compio |
 
 The synchronous API follows the native C API closely. The async crate supports request/reply,
 publish/subscribe, dealer/router, and push/pull sockets. It provides `futures` streams and sinks
 where the socket pattern permits them.
 
-The async crate supports Tokio and `async-io` on Unix. See
+The async crate supports Tokio, `async-io`, and compio on Unix. See
 [adapter selection](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/README.md#runtime-selection)
 for feature flags and examples.
 
@@ -81,13 +81,13 @@ remaining work.
 
 ## Use the bindings
 
-All three packages use version `0.2.2`. Their dependency declarations are:
+All three packages use version `0.3.0`. Their dependency declarations are:
 
 ```toml
 [dependencies]
-r0z = "0.2.2"
+r0z = "0.3.0"
 # Add this dependency if you need async sockets:
-r0z-async = "0.2.2"
+r0z-async = "0.3.0"
 ```
 
 Applications normally need no direct dependency on `r0z-sys`. For local development, replace the
@@ -138,14 +138,24 @@ To reduce import edits, you can use Cargo dependency aliases:
 
 ```toml
 [dependencies]
-zmq = { package = "r0z", version = "0.2.2" }
-tmq = { package = "r0z-async", version = "0.2.2" }
+zmq = { package = "r0z", version = "0.3.0" }
+tmq = { package = "r0z-async", version = "0.3.0" }
 ```
 
 Remove old `[patch.crates-io]` entries for this fork's `zmq` and `zmq-sys` packages. The new
 packages cannot replace those names through a patch alone. Migrate dependencies that still use the
 old bindings too. Both native binding packages declare `links = "zmq"`, so Cargo cannot include both
 in one dependency graph.
+
+## Migrating from 0.2
+
+Async socket types now carry a runtime parameter. Use types such as `RequestReply<Compio>` when the
+adapter differs from the default. `with_runtime::<R>()` changes the builder's output type. Custom
+adapters now return an associated concrete registration type. See the
+[async migration guide](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/README.md#runtime-api-migration-from-02).
+
+Compio sockets stay on their runtime thread. Tokio and async-io socket types retain `Send` when the
+compio feature is enabled. The synchronous API is unchanged.
 
 ## Migrating from 0.1
 
@@ -167,9 +177,9 @@ To build without CURVE encryption or sodium, disable default features:
 
 ```toml
 [dependencies]
-r0z = { version = "0.2.2", default-features = false }
+r0z = { version = "0.3.0", default-features = false }
 # For async sockets with Tokio:
-r0z-async = { version = "0.2.2", default-features = false, features = ["tokio"] }
+r0z-async = { version = "0.3.0", default-features = false, features = ["tokio"] }
 ```
 
 Both public crates enable `curve` by default. Add `"curve"` to the feature list to restore CURVE

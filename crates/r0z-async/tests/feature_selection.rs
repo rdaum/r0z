@@ -1,9 +1,24 @@
 use r0z_async::{Context, TmqError};
 
-#[cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#[cfg(all(unix, feature = "tokio"))]
+#[test]
+fn tokio_subscriber_registration_outside_runtime_returns_an_error() {
+    let _deadline = utils::Deadline::start();
+    let context = Context::new();
+    let result = r0z_async::subscribe(&context)
+        .with_runtime::<r0z_async::runtime::Tokio>()
+        .connect("inproc://subscriber-without-runtime");
+    assert!(matches!(result, Err(TmqError::Io(_))));
+    let result = r0z_async::subscribe(&context)
+        .with_runtime::<r0z_async::runtime::Tokio>()
+        .bind("inproc://subscriber-without-runtime");
+    assert!(matches!(result, Err(TmqError::Io(_))));
+}
+
+#[cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 mod utils;
 
-#[cfg(not(all(unix, any(feature = "tokio", feature = "async-io"))))]
+#[cfg(not(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio"))))]
 #[test]
 fn no_default_adapter_returns_an_error() {
     let context = Context::new();
@@ -15,7 +30,7 @@ fn no_default_adapter_returns_an_error() {
     );
 }
 
-#[cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#[cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 #[test]
 fn default_adapter_sends_and_receives() -> Result<(), TmqError> {
     use futures::{SinkExt, StreamExt};
@@ -42,8 +57,12 @@ fn default_adapter_sends_and_receives() -> Result<(), TmqError> {
             .unwrap()
             .block_on(test)
     }
-    #[cfg(not(feature = "tokio"))]
+    #[cfg(all(not(feature = "tokio"), feature = "async-io"))]
     {
         async_io::block_on(test)
+    }
+    #[cfg(all(not(any(feature = "tokio", feature = "async-io")), feature = "compio"))]
+    {
+        utils::compio_runtime()?.block_on(test)
     }
 }

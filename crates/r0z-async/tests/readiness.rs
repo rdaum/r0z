@@ -1,4 +1,4 @@
-#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 
 use futures::{SinkExt, Stream, StreamExt, task::ArcWake};
 use r0z_async::{AsZmqSocket, Context, Multipart, Result};
@@ -41,11 +41,12 @@ struct SilentRegistration {
 }
 
 impl r0z_async::runtime::Runtime for SilentRuntime {
-    fn register(socket: r0z::Socket) -> Result<Box<dyn r0z_async::runtime::Registration>> {
-        Ok(Box::new(SilentRegistration {
+    type Registration = SilentRegistration;
+    fn register(socket: r0z::Socket) -> Result<Self::Registration> {
+        Ok(SilentRegistration {
             socket,
             waker: RefCell::new(None),
-        }))
+        })
     }
 }
 

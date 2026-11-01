@@ -1,3 +1,4 @@
+use crate::runtime::{DefaultRuntime, Runtime};
 use r0z::Context as ZmqContext;
 
 use crate::{FromZmqSocket, SocketBuilder, comm::SenderReceiver, poll::ZmqPoller};
@@ -8,17 +9,15 @@ pub fn pair(context: &ZmqContext) -> SocketBuilder<Pair> {
 }
 
 /// Asynchronous PAIR Socket.
-pub struct Pair {
-    inner: SenderReceiver,
+pub struct Pair<R: Runtime = DefaultRuntime> {
+    inner: SenderReceiver<R>,
 }
 
-impl FromZmqSocket<Pair> for Pair {
-    fn from_zmq_socket(
-        socket: r0z::Socket,
-        register: crate::runtime::Register,
-    ) -> crate::Result<Self> {
+impl<R: Runtime> FromZmqSocket for Pair<R> {
+    type WithRuntime<S: Runtime> = Pair<S>;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self> {
         Ok(Self {
-            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket, register)?),
+            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket)?),
         })
     }
 }

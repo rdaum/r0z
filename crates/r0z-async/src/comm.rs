@@ -1,20 +1,19 @@
+use crate::runtime::Runtime;
 use crate::{
     Multipart,
     poll::{ReceiverBuffer, ZmqPoller},
 };
 
-type Poller = ZmqPoller;
-
 /// Sends multiparts using an owned Poller.
-pub struct Sender {
-    pub(crate) poller: Poller,
+pub struct Sender<R: Runtime> {
+    pub(crate) poller: ZmqPoller<R>,
     pub(crate) buffer: Multipart,
 }
 impl_as_socket!(Sender, poller);
 impl_sink!(Sender, buffer, poller);
 
-impl Sender {
-    pub(crate) fn new(poller: Poller) -> Self {
+impl<R: Runtime> Sender<R> {
+    pub(crate) fn new(poller: ZmqPoller<R>) -> Self {
         Self {
             poller,
             buffer: Default::default(),
@@ -23,31 +22,31 @@ impl Sender {
 }
 
 /// Receives multiparts using an owned Poller.
-pub struct Receiver {
-    pub(crate) poller: Poller,
+pub struct Receiver<R: Runtime> {
+    pub(crate) poller: ZmqPoller<R>,
 }
 impl_as_socket!(Receiver, poller);
 impl_stream!(Receiver, poller);
 
-impl Receiver {
-    pub(crate) fn new(poller: Poller) -> Self {
+impl<R: Runtime> Receiver<R> {
+    pub(crate) fn new(poller: ZmqPoller<R>) -> Self {
         Self { poller }
     }
-    pub fn buffered(self, capacity: usize) -> BufferedReceiver {
+    pub fn buffered(self, capacity: usize) -> BufferedReceiver<R> {
         BufferedReceiver::new(self.poller, capacity)
     }
 }
 
 /// Receives buffered multiparts using an owned Poller.
-pub struct BufferedReceiver {
-    pub(crate) poller: Poller,
+pub struct BufferedReceiver<R: Runtime> {
+    pub(crate) poller: ZmqPoller<R>,
     pub(crate) buffer: ReceiverBuffer,
 }
 impl_as_socket!(BufferedReceiver, poller);
 impl_buffered_stream!(BufferedReceiver, buffer, poller);
 
-impl BufferedReceiver {
-    pub(crate) fn new(poller: Poller, capacity: usize) -> Self {
+impl<R: Runtime> BufferedReceiver<R> {
+    pub(crate) fn new(poller: ZmqPoller<R>, capacity: usize) -> Self {
         Self {
             poller,
             buffer: ReceiverBuffer::new(capacity),
@@ -56,16 +55,16 @@ impl BufferedReceiver {
 }
 
 /// Sends ands receives multiparts using an owned Poller.
-pub struct SenderReceiver {
-    pub(crate) poller: Poller,
+pub struct SenderReceiver<R: Runtime> {
+    pub(crate) poller: ZmqPoller<R>,
     pub(crate) buffer: Multipart,
 }
 impl_as_socket!(SenderReceiver, poller);
 impl_sink!(SenderReceiver, buffer, poller);
 impl_stream!(SenderReceiver, poller);
 
-impl SenderReceiver {
-    pub(crate) fn new(poller: Poller) -> Self {
+impl<R: Runtime> SenderReceiver<R> {
+    pub(crate) fn new(poller: ZmqPoller<R>) -> Self {
         Self {
             poller,
             buffer: Default::default(),

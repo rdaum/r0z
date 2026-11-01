@@ -1,3 +1,4 @@
+use crate::runtime::{DefaultRuntime, Runtime};
 use r0z::Context as ZmqContext;
 
 use crate::{FromZmqSocket, SocketBuilder, comm::SenderReceiver, poll::ZmqPoller};
@@ -8,17 +9,15 @@ pub fn dealer(context: &ZmqContext) -> SocketBuilder<Dealer> {
 }
 
 /// Asynchronous DEALER Socket.
-pub struct Dealer {
-    inner: SenderReceiver,
+pub struct Dealer<R: Runtime = DefaultRuntime> {
+    inner: SenderReceiver<R>,
 }
 
-impl FromZmqSocket<Dealer> for Dealer {
-    fn from_zmq_socket(
-        socket: r0z::Socket,
-        register: crate::runtime::Register,
-    ) -> crate::Result<Self> {
+impl<R: Runtime> FromZmqSocket for Dealer<R> {
+    type WithRuntime<S: Runtime> = Dealer<S>;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self> {
         Ok(Self {
-            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket, register)?),
+            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket)?),
         })
     }
 }

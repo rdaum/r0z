@@ -1,4 +1,4 @@
-#![cfg(all(unix, any(feature = "tokio", feature = "async-io")))]
+#![cfg(all(unix, any(feature = "tokio", feature = "async-io", feature = "compio")))]
 
 use futures::{FutureExt, SinkExt, StreamExt, TryFutureExt};
 use r0z::{Context, SocketType};
@@ -226,16 +226,18 @@ fn split_echo() -> Result<()> {
 #[test]
 fn split_send_all() -> Result<()> {
     utils::run(|| async {
-        let address = generate_tcp_address();
+        // Bind first so concurrent tests and outbound connections cannot take the chosen port.
+        let peer_context = Context::new();
+        let receiver = peer_context.socket(SocketType::DEALER)?;
+        receiver.bind("tcp://127.0.0.1:*")?;
+        let address = receiver.get_last_endpoint()?.unwrap();
         let ctx = Context::new();
         let (mut tx, _) = utils::dealer(&ctx).connect(&address)?.split();
 
         let count = 10_000;
+        let progress = utils::Progress::new("receiver", count);
         let thread = spawn(move || {
-            let ctx = Context::new();
-            let receiver = ctx.socket(SocketType::DEALER).unwrap();
-            receiver.bind(&address).unwrap();
-
+            progress.phase("receiving");
             for i in 0..count {
                 let received = receiver.recv_multipart(0).unwrap();
                 assert_eq!(
@@ -245,7 +247,9 @@ fn split_send_all() -> Result<()> {
                         (i + 1).to_string().as_bytes().to_vec(),
                     )
                 );
+                progress.advance(i + 1);
             }
+            progress.phase("complete");
         });
 
         let mut count = futures::stream::iter((0..count).map(|i| {
@@ -254,9 +258,12 @@ fn split_send_all() -> Result<()> {
                 r0z::Message::from(&(i + 1).to_string()),
             ]))
         }));
+        utils::diagnostic_phase("send_all");
         tx.send_all(&mut count).await?;
 
+        utils::diagnostic_phase("joining receiver");
         thread.join().unwrap();
+        utils::diagnostic_phase("receiver joined");
 
         Ok(())
     })

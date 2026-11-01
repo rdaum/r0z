@@ -1,3 +1,4 @@
+use crate::runtime::{DefaultRuntime, Runtime};
 use r0z::Context as ZmqContext;
 
 use crate::{FromZmqSocket, SocketBuilder, comm::Receiver, poll::ZmqPoller};
@@ -8,17 +9,15 @@ pub fn pull(context: &ZmqContext) -> SocketBuilder<Pull> {
 }
 
 /// Asynchronous PULL socket.
-pub struct Pull {
-    inner: Receiver,
+pub struct Pull<R: Runtime = DefaultRuntime> {
+    inner: Receiver<R>,
 }
 
-impl FromZmqSocket<Pull> for Pull {
-    fn from_zmq_socket(
-        socket: r0z::Socket,
-        register: crate::runtime::Register,
-    ) -> crate::Result<Self> {
+impl<R: Runtime> FromZmqSocket for Pull<R> {
+    type WithRuntime<S: Runtime> = Pull<S>;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self> {
         Ok(Self {
-            inner: Receiver::new(ZmqPoller::from_zmq_socket(socket, register)?),
+            inner: Receiver::new(ZmqPoller::from_zmq_socket(socket)?),
         })
     }
 }

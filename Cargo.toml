@@ -4,7 +4,7 @@ members = ["crates/r0z", "crates/r0z-async", "crates/r0z-sys"]
 exclude = ["fuzz", "msrv-test"]
 
 [workspace.package]
-version = "0.2.2"
+version = "0.3.0"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/rdaum/r0z"
@@ -14,6 +14,7 @@ async-executor = "1.14.0"
 async-io = "2.6.0"
 bitflags = "2.13.2"
 cc = "1.8.0"
+compio = { version = "0.19.2", default-features = false, features = ["runtime", "io-uring", "polling"] }
 criterion = "0.8.2"
 env_logger = { version = "0.11.11", default-features = false }
 futures = { version = "0.3.34", default-features = false, features = ["alloc"] }
@@ -25,8 +26,8 @@ nix = { version = "0.31.3", features = ["poll"] }
 pkg-config = "0.3.34"
 pretty_env_logger = "0.5.0"
 quickcheck = "1.1.0"
-r0z = { version = "0.2.2", path = "crates/r0z", default-features = false }
-r0z-sys = { version = "0.2.2", path = "crates/r0z-sys" }
+r0z = { version = "0.3.0", path = "crates/r0z", default-features = false }
+r0z-sys = { version = "0.3.0", path = "crates/r0z-sys" }
 rand = "0.10.3"
 tar = "0.4.46"
 tempfile = "3.27.0"

@@ -1,3 +1,4 @@
+use crate::runtime::{DefaultRuntime, Runtime};
 use std::pin::Pin;
 
 use crate::{FromZmqSocket, Multipart, SocketBuilder, TmqError, poll::ZmqPoller};
@@ -31,34 +32,35 @@ pub enum RequestReplyState {
 /// Operations retain caller ownership on cancellation and errors. Successful sends and receives
 /// alternate, as required by native ZeroMQ. Check [`Self::state`] after cancellation.
 ///
-/// Cancelling a pending receive leaves it available for another `recv`. Cancelling a pending send
+/// Dropping a pending receive leaves it available for another `recv`. Dropping a pending send
 /// retains its multipart in the socket; call `flush` to resume it. A completed send cannot be undone.
 /// A REQ socket must receive the outstanding reply before it can send another request.
 ///
 /// Native or reactor errors mark the socket as `Failed`, because multipart progress can be uncertain.
 /// This includes errors after a partial send. Recreate failed sockets; they remain available for
 /// inspection and linger configuration. Invalid operations and empty messages do not change state.
+/// Compio cancellation-token errors and polling outside the original runtime also mark the socket
+/// as `Failed`, even when no native I/O occurred. Returning to the original runtime does not reset
+/// this state. Dropping a pending future does not mark the socket as `Failed`.
 ///
 /// Use [`crate::AsZmqSocket::get_socket`] for inspection and options only. Native send/receive calls and
 /// relaxed REQ sequencing bypass the state tracked by this wrapper and are not supported.
-pub struct RequestReply {
-    inner: ZmqPoller,
+pub struct RequestReply<R: Runtime = DefaultRuntime> {
+    inner: ZmqPoller<R>,
     state: RequestReplyState,
     pending: Multipart,
 }
 
-impl FromZmqSocket<RequestReply> for RequestReply {
-    fn from_zmq_socket(
-        socket: r0z::Socket,
-        register: crate::runtime::Register,
-    ) -> crate::Result<Self> {
+impl<R: Runtime> FromZmqSocket for RequestReply<R> {
+    type WithRuntime<S: Runtime> = RequestReply<S>;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self> {
         let state = match socket.get_socket_type()? {
             r0z::REQ => RequestReplyState::SendReady,
             r0z::REP => RequestReplyState::ReceiveReady,
             _ => return Err(r0z::Error::EINVAL.into()),
         };
         Ok(Self {
-            inner: ZmqPoller::from_zmq_socket(socket, register)?,
+            inner: ZmqPoller::from_zmq_socket(socket)?,
             state,
             pending: Multipart::default(),
         })
@@ -67,7 +69,7 @@ impl FromZmqSocket<RequestReply> for RequestReply {
 
 impl_as_socket!(RequestReply, inner);
 
-impl RequestReply {
+impl<R: Runtime> RequestReply<R> {
     /// Returns the current protocol state, including a buffered send or a failed operation.
     pub fn state(&self) -> RequestReplyState {
         self.state
@@ -102,7 +104,7 @@ impl RequestReply {
 
     /// Resumes a buffered send. This is a no-op when no send is buffered, unless the socket failed.
     ///
-    /// Cancellation retains the buffered message. Success changes the state to `ReceiveReady`.
+    /// Dropping this future retains the buffered message. Success changes the state to `ReceiveReady`.
     pub async fn flush(&mut self) -> crate::Result<()> {
         match self.state {
             RequestReplyState::SendReady | RequestReplyState::ReceiveReady => return Ok(()),
@@ -125,7 +127,7 @@ impl RequestReply {
 
     /// Receives one multipart message without consuming the socket.
     ///
-    /// Cancellation while pending leaves the state as `ReceiveReady`. Call `recv` again to resume.
+    /// Dropping this future while pending leaves the state as `ReceiveReady`. Call `recv` again to resume.
     /// Success changes the state to `SendReady`. A timeout does not reset the native protocol.
     pub async fn recv(&mut self) -> crate::Result<Multipart> {
         self.require(RequestReplyState::ReceiveReady, "recv")?;

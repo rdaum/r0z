@@ -1,3 +1,4 @@
+use crate::runtime::{DefaultRuntime, Runtime};
 use r0z::Context as ZmqContext;
 
 use crate::{
@@ -11,17 +12,15 @@ pub fn router(context: &ZmqContext) -> SocketBuilder<Router> {
 }
 
 /// Asynchronous ROUTER socket.
-pub struct Router {
-    inner: SenderReceiver,
+pub struct Router<R: Runtime = DefaultRuntime> {
+    inner: SenderReceiver<R>,
 }
 
-impl FromZmqSocket<Router> for Router {
-    fn from_zmq_socket(
-        socket: r0z::Socket,
-        register: crate::runtime::Register,
-    ) -> crate::Result<Self> {
+impl<R: Runtime> FromZmqSocket for Router<R> {
+    type WithRuntime<S: Runtime> = Router<S>;
+    fn from_zmq_socket(socket: r0z::Socket) -> crate::Result<Self> {
         Ok(Self {
-            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket, register)?),
+            inner: SenderReceiver::new(ZmqPoller::from_zmq_socket(socket)?),
         })
     }
 }
@@ -30,7 +29,7 @@ impl_wrapper!(Router, SenderReceiver, inner);
 impl_wrapper_sink!(Router, inner);
 impl_wrapper_stream!(Router, inner);
 
-impl Router {
+impl<R: Runtime> Router<R> {
     /// Accessor for the `ZMQ_ROUTER_MANDATORY` option.
     pub fn is_router_mandatory(&self) -> Result<bool> {
         Ok(self.get_socket().is_router_mandatory()?)

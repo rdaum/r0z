@@ -3,9 +3,9 @@
 Async Rust bindings to native ZeroMQ (`libzmq`), built on `r0z`. This is a fork of `tmq` 0.5.0,
 maintained in the r0z workspace. It is not a ZeroMQ implementation written from scratch in Rust.
 
-The built-in runtime adapters support Tokio and `async-io` on Unix. Tokio and CURVE encryption are
-enabled by default. Supported socket patterns include request/reply, publish/subscribe,
-dealer/router, and push/pull.
+The built-in runtime adapters support Tokio, `async-io`, and compio on Unix. Tokio and CURVE
+encryption are enabled by default. Supported socket patterns include request/reply,
+publish/subscribe, dealer/router, and push/pull.
 
 ```rust,no_run
 use futures::SinkExt;
@@ -46,7 +46,7 @@ For `async-io`, disable default features and select the adapter:
 
 ```toml
 [dependencies]
-r0z-async = { version = "0.2.2", default-features = false, features = ["async-io"] }
+r0z-async = { version = "0.3.0", default-features = false, features = ["async-io"] }
 async-io = "2.6.0"
 futures = "0.3.34"
 ```
@@ -78,22 +78,114 @@ CURVE encryption. For Tokio without sodium, use `default-features = false` with
 `features = ["tokio"]`. Cargo combines dependency features, so another dependency can still enable
 sodium.
 
-The `async-io` adapter also works with executors such as smol. When both runtime features are
-enabled, Tokio remains the default. Select `AsyncIo` explicitly to use it. Different sockets can use
-different adapters in the same application.
+For compio, disable default features and select its adapter:
 
-The shared core owns multipart handling, native readiness checks, and separate send and receive
-waiters. Each adapter owns a native socket and its reactor registration. Each socket uses one boxed
-registration and one shared waker allocation. The adapter boundary adds no allocation per message.
-No performance improvement is claimed for this change.
+```toml
+[dependencies]
+r0z-async = { version = "0.3.0", default-features = false, features = ["compio"] }
+compio = { version = "0.19.2", features = ["macros"] }
+futures = "0.3.34"
+```
 
-For another runtime, implement `runtime::Runtime` and `runtime::Registration` and select it through
-the builder. With neither built-in feature, constructors require an explicit adapter; otherwise
-registration returns an unsupported-operation error.
+```rust,no_run
+use futures::{SinkExt, StreamExt};
+use r0z_async::{pull, push, runtime::Compio, Context, Result};
 
-Both built-in adapters currently support Unix only. On Windows, `ZMQ_FD` returns a `SOCKET`, not a
-Unix file descriptor. Windows needs a separate validated registration path. This change does not
-establish Windows or compio support.
+#[compio::main]
+async fn main() -> Result<()> {
+    let context = Context::new();
+    let mut receiver = pull(&context)
+        .with_runtime::<Compio>()
+        .bind("inproc://compio")?;
+    let mut sender = push(&context)
+        .with_runtime::<Compio>()
+        .connect("inproc://compio")?;
+    sender.send(vec!["hello"]).await?;
+    assert_eq!(receiver.next().await.unwrap()?[0].as_str(), Some("hello"));
+    Ok(())
+}
+```
+
+Add `"curve"` to retain CURVE encryption. The compio configuration needs no Tokio dependency or
+runtime. See the
+[`compio` example](https://github.com/rdaum/r0z/blob/main/crates/r0z-async/examples/compio.rs) for a
+receive task.
+
+Create and use compio sockets inside the same compio runtime. Compio sockets are neither `Send` nor
+`Sync`. Use `compio::runtime::spawn` for local tasks. Split socket halves can run in separate tasks
+on that runtime thread. Create a separate socket inside each runtime when you use multiple threads.
+Builders do not hold a registration and can move between threads before `bind` or `connect`. Polling
+outside the original compio runtime returns an I/O error, including on the same thread.
+
+Compio's `FutureExt::with_cancel` works for send and receive futures. Cancellation returns an I/O
+error with `ECANCELED`. Each direction observes its own token; cancelling one split half does not
+cancel the other. Cancellation does not undo frames already delivered. Sink send buffers retain
+queued frames; a later flush can send them. REQ/REP sockets treat cancellation-token errors like
+other I/O errors: they enter `Failed` and must be recreated. Drop the borrowing REQ/REP future to
+cancel a wait while preserving its state.
+
+Polling a REQ/REP send or receive outside its original compio runtime also marks the socket
+`Failed`, even when no native I/O occurred. Returning to the original runtime does not reset this
+state. Recreate the socket before further I/O.
+
+The adapter uses compio's `PollFd` on a duplicate of the native notification descriptor. On Linux,
+compio can use io_uring or its polling driver. Other supported Unix targets use the polling driver.
+Native libzmq still owns transport I/O and message buffers. The adapter never reads or writes the
+notification descriptor. This integration does not establish a performance improvement.
+
+The `async-io` adapter also works with executors such as smol. The default adapter follows this
+feature priority: Tokio, async-io, then compio. Select an adapter explicitly when multiple features
+are enabled. Different socket types and adapters can coexist in one application.
+
+All adapters share multipart handling, native readiness checks, and separate send and receive
+waiters. Each socket owns a concrete registration and one shared waker allocation. Runtime selection
+uses static dispatch. Compio manages pending readiness operations through its driver.
+
+All built-in adapters currently support Unix only. On Windows, `ZMQ_FD` returns a `SOCKET`. Windows
+needs a separate validated registration path.
+
+## Runtime API migration from 0.2
+
+Socket types now include a runtime parameter. For example, a compio DEALER has type
+`Dealer<Compio>`. An omitted parameter selects `runtime::DefaultRuntime` from the enabled features.
+Existing calls that use the default adapter retain their syntax.
+
+Cargo unifies features across dependencies. Another dependency that enables Tokio can therefore
+change `DefaultRuntime` and break an inferred return type. Libraries should name the runtime in
+their public socket types and select it with `with_runtime`, as shown below.
+
+`with_runtime::<R>()` now changes the builder's output type. Update explicit return types and stored
+socket types for adapters that differ from the default:
+
+```rust,no_run
+use r0z_async::{request_reply::RequestReply, runtime::AsyncIo, Context, Result};
+
+fn connect(context: &Context) -> Result<RequestReply<AsyncIo>> {
+    r0z_async::request(context)
+        .with_runtime::<AsyncIo>()
+        .connect("tcp://127.0.0.1:7897")
+}
+```
+
+This example requires the `async-io` feature. Tokio and async-io socket types retain `Send`,
+including when compio is enabled. Compio socket types remain local. Cargo feature unification does
+not remove `Send` from an explicitly typed Tokio or async-io socket.
+
+Custom adapters must define `Runtime::Registration` and return that concrete type from `register`.
+`Registration` now requires `Unpin` instead of `Send`. Its ownership and notification requirements
+remain unchanged. The socket derives its thread restrictions from the registration. The old boxed
+registration and `runtime::Register` function pointer are removed. The optional `check_context` hook
+receives the original task context before each I/O poll. Use it for runtime affinity or cancellation
+checks; readiness polling receives the shared notification waker.
+
+SUB sockets now register at `bind` or `connect`, before the first `subscribe` call. Registration
+errors therefore return from the builder. Tokio construction outside a runtime returns an I/O error.
+Enter an I/O-enabled Tokio runtime before `bind` or `connect`; a runtime without I/O still causes
+Tokio registration to panic. Custom users of the hidden `FromZmqSocket` construction trait must also
+update to its associated `WithRuntime<R>` type and socket-only constructor.
+
+With no runtime feature, the default is `NoRuntime`. Constructors return an unsupported-operation
+error unless the builder selects a custom adapter.
 
 ## Request/reply ownership and migration
 
@@ -180,6 +272,10 @@ drop(socket);
 # Ok(())
 # }
 ```
+
+Compio cancellation can retain the duplicated notification descriptor until the driver processes it.
+It does not retain the native socket or context. Dropping a socket closes it without another runtime
+turn, subject to the native linger rules above.
 
 This controls local shutdown. It does not undo requests already delivered to a peer. Configure
 linger on each socket with queued outgoing messages before dropping the final context reference. See
