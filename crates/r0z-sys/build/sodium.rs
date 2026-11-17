@@ -6,7 +6,7 @@ use std::{
     env, fs,
     io::{Cursor, Read},
     path::{Path, PathBuf},
-    time::Duration,
+    process::{Command, Stdio},
 };
 
 use crate::sodium_compile;
@@ -323,24 +323,48 @@ fn unpack_msvc_zip(bytes: Vec<u8>, destination: &Path) {
 }
 
 fn download(name: &str) -> Vec<u8> {
-    let agent = ureq::Agent::config_builder()
-        .timeout_global(Some(Duration::from_secs(300)))
-        .proxy(ureq::Proxy::try_from_env())
-        .build()
-        .new_agent();
-    let mut response = agent
-        .get(&format!(
+    const MAX_BYTES: u64 = 64 * 1024 * 1024;
+    let mut child = Command::new("curl")
+        .args([
+            "--disable",
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--location",
+            "--proto",
+            "=https",
+            "--proto-redir",
+            "=https",
+            "--max-time",
+            "300",
+        ])
+        .arg(format!(
             "https://download.libsodium.org/libsodium/releases/{name}"
         ))
-        .call()
-        .expect("Cannot download sodium; use SODIUM_DIST_DIR for offline builds");
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap_or_else(|e| {
+            panic!("Cannot run curl for {name}: {e}. Set SODIUM_DIST_DIR for offline builds")
+        });
+
     let mut bytes = Vec::new();
-    response
-        .body_mut()
-        .as_reader()
-        .take(64 * 1024 * 1024)
-        .read_to_end(&mut bytes)
-        .unwrap();
+    // Drop the pipe before waiting so curl can exit if the response exceeds the limit.
+    let read = child
+        .stdout
+        .take()
+        .unwrap()
+        .take(MAX_BYTES + 1)
+        .read_to_end(&mut bytes);
+    let status = child.wait().expect("Cannot wait for curl");
+    read.expect("Cannot read the sodium download");
+    assert!(
+        bytes.len() as u64 <= MAX_BYTES,
+        "Sodium download {name} exceeds 64 MiB"
+    );
+    assert!(
+        status.success(),
+        "curl failed for {name} ({status}). Set SODIUM_DIST_DIR for offline builds"
+    );
     bytes
 }
 

@@ -22,6 +22,8 @@
   capture enabled.
 - Replaced `pretty_env_logger` with `env_logger` 0.11 in the async examples. This removes the
   unmaintained `humantime` crate (RUSTSEC-2026-0542) from the dependency tree.
+- Windows targets now use the host’s `curl` to download signed libsodium archives. This removes
+  `ureq` and its TLS dependencies from the default `r0z` build.
 - Fixed the Windows errno import in `r0z-sys` after the Rust edition migration. Version 0.2.1 fails
   to compile on Windows.
 

@@ -13,8 +13,6 @@ extern crate tar;
 #[cfg(feature = "libsodium")]
 extern crate tempfile;
 #[cfg(feature = "libsodium")]
-extern crate ureq;
-#[cfg(feature = "libsodium")]
 extern crate vcpkg;
 #[cfg(all(feature = "libsodium", windows))]
 extern crate zip;
