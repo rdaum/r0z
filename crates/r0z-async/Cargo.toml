@@ -41,8 +41,8 @@ tokio = { workspace = true, optional = true, features = ["rt", "rt-multi-thread"
 async-executor.workspace = true
 compio = { workspace = true, features = ["time", "macros"] }
 criterion.workspace = true
+env_logger = { workspace = true, features = ["auto-color"] }
 futures = { workspace = true, features = ["async-await"] }
-pretty_env_logger.workspace = true
 rand.workspace = true
 tempfile.workspace = true
 
