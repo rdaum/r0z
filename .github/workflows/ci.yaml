@@ -45,6 +45,12 @@ jobs:
           import subprocess
           graph = subprocess.check_output(["cargo", "tree", "--workspace", "--all-features", "--prefix", "none", "--format", "{p}"], text=True)
           assert not any(line.startswith("zip v") for line in graph.splitlines()), graph
+      - name: Verify the sodium build excludes the Rust HTTP and TLS dependencies
+        shell: python
+        run: |
+          import subprocess
+          graph = subprocess.check_output(["cargo", "tree", "-p", "r0z-sys", "--features", "libsodium", "--prefix", "none", "--format", "{p}"], text=True)
+          assert not any(line.startswith(("ureq v", "rustls v", "ring v")) for line in graph.splitlines()), graph
       - name: Test synchronous sockets without CURVE
         run: cargo test -p r0z --no-default-features --all-targets
       - name: Verify the synchronous opt-out excludes sodium build dependencies

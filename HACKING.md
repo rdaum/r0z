@@ -139,11 +139,12 @@ builds require a C compiler, a C++ compiler, and `make`. They do not download na
 target directory contains spaces, the build uses a temporary directory and copies the results back.
 The temporary directory must have a path without spaces.
 
-Windows builds download signed libsodium 1.0.22 stable archives over HTTPS. MSVC targets use ZIP
-archives; GNU targets use tar archives. The build checks the upstream Minisign signature before
-extraction and caches verified downloads under `OUT_DIR`. Upstream stable archive URLs are mutable.
-For reproducible or offline Windows builds, retain an archive and its signature in
-`SODIUM_DIST_DIR`. Supported archives cover x86, x64, and ARM64 with MSVC, and x86 and x64 with GNU.
+For Windows targets, the build uses the host’s `curl` executable to download signed libsodium 1.0.22
+stable archives over HTTPS. Only downloads require `curl` on `PATH`. MSVC targets use ZIP archives;
+GNU targets use tar archives. The build checks the upstream Minisign signature before extraction and
+caches verified downloads under `OUT_DIR`. Upstream stable archive URLs are mutable. For
+reproducible or offline Windows builds, retain an archive and its signature in `SODIUM_DIST_DIR`.
+Supported archives cover x86, x64, and ARM64 with MSVC, and x86 and x64 with GNU.
 
 Only Windows hosts build the Rust `zip` dependency. Cross-compilation from Linux or macOS to Windows
 MSVC requires `unzip` to extract the verified archive. The build regression tests also require
