@@ -8,9 +8,7 @@ use std::env;
 #[tokio::main]
 async fn main() -> Result<()> {
     let filter = env::var("RUST_LOG").unwrap_or_else(|_| "subscribe=DEBUG".to_owned());
-    pretty_env_logger::formatted_builder()
-        .parse_filters(&filter)
-        .init();
+    env_logger::Builder::new().parse_filters(&filter).init();
 
     let mut socket = subscribe(&Context::new())
         .connect("tcp://127.0.0.1:7899")?

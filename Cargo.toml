@@ -24,7 +24,6 @@ log = "0.4.34"
 minisign-verify = "0.2.5"
 nix = { version = "0.31.3", features = ["poll"] }
 pkg-config = "0.3.34"
-pretty_env_logger = "0.5.0"
 quickcheck = "1.1.0"
 r0z = { version = "0.3.0", path = "crates/r0z", default-features = false }
 r0z-sys = { version = "0.3.0", path = "crates/r0z-sys" }
