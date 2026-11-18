@@ -46,7 +46,7 @@ For `async-io`, disable default features and select the adapter:
 
 ```toml
 [dependencies]
-r0z-async = { version = "0.3.0", default-features = false, features = ["async-io"] }
+r0z-async = { version = "0.3.1", default-features = false, features = ["async-io"] }
 async-io = "2.6.0"
 futures = "0.3.34"
 ```
@@ -82,7 +82,7 @@ For compio, disable default features and select its adapter:
 
 ```toml
 [dependencies]
-r0z-async = { version = "0.3.0", default-features = false, features = ["compio"] }
+r0z-async = { version = "0.3.1", default-features = false, features = ["compio"] }
 compio = { version = "0.19.2", features = ["macros"] }
 futures = "0.3.34"
 ```
